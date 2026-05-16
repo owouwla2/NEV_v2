@@ -1,0 +1,82 @@
+name: nev-v2
+
+# NEV-v2 开发依赖：MySQL 8 + Redis 7
+# 与老仓 NEV 端口规划：
+#   - MySQL  13306  避开老仓 WeBASE 23306 / 老仓 backend 默认 3306
+#   - Redis  6379  老仓 Redis 也是 6379；如老仓 Redis 已占用，请先停或改 .env REDIS_PORT
+# 业务隔离：application-*.yml 中 spring.data.redis.database = 1（老仓默认 0）
+# MinIO：D2 不起，Wave 3-4 需要时再加 service
+services:
+  mysql:
+    image: mysql:8.0.42
+    container_name: nev-v2-mysql
+    restart: unless-stopped
+    ports:
+      - "${MYSQL_PORT:-13306}:3306"
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-nev_v2_root_2026}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-nev_v2}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+      - --explicit_defaults_for_timestamp=true
+      - --lower_case_table_names=1
+      - --default-authentication-plugin=mysql_native_password
+    volumes:
+      - ./volumes/mysql/data:/var/lib/mysql
+      - ./volumes/mysql/conf:/etc/mysql/conf.d
+      - ./volumes/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        - "CMD"
+        - "mysqladmin"
+        - "ping"
+        - "-h"
+        - "localhost"
+        - "-uroot"
+        - "-p${MYSQL_ROOT_PASSWORD:-nev_v2_root_2026}"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    networks:
+      - nev-v2-net
+
+  redis:
+    image: redis:7.4.1-alpine
+    container_name: nev-v2-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    environment:
+      TZ: Asia/Shanghai
+    command:
+      - "redis-server"
+      - "--requirepass"
+      - "${REDIS_PASSWORD:-nev_v2_redis_2026}"
+      - "--appendonly"
+      - "yes"
+      - "--maxmemory"
+      - "256mb"
+      - "--maxmemory-policy"
+      - "allkeys-lru"
+    volumes:
+      - ./volumes/redis/data:/data
+    healthcheck:
+      test:
+        - "CMD"
+        - "redis-cli"
+        - "-a"
+        - "${REDIS_PASSWORD:-nev_v2_redis_2026}"
+        - "ping"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks:
+      - nev-v2-net
+
+networks:
+  nev-v2-net:
+    name: nev-v2-net
+    driver: bridge

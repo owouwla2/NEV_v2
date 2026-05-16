@@ -4,7 +4,8 @@
 > 新对话框只需要让 Claude 先读完本文档，就能无损接上之前的所有进度、约定、踩过的坑。
 >
 > **创建日期**：2026-05-15
-> **当前进度**：Wave 1 D1 已完成，等待 Wave 1 D2 启动
+> **最后更新**：2026-05-16
+> **当前进度**：Wave 1 D2 已完成（后端可启动 + admin 登录验证通过）
 > **位置**：`E:/Study/IdeaProjects/NEV-v2/HANDOFF.md`
 
 ---
@@ -113,16 +114,40 @@ a39204b  chore: import ruoyi-vue-plus 5.6.1 as backend/ skeleton
 | 14 | 4 个子模块 pom.xml 父引用：`ruoyi-vue-plus` → `nev-backend` | ✓ |
 | 15 | **mvn clean compile -T 4 → BUILD SUCCESS（33 模块 / 41.5s）** | ✓ |
 
-### 2.3 D1 还没做的（属于 D1-D2 过渡）
+### 2.3 Wave 1 D2 完成清单（2026-05-16）
 
-- ❌ 改 `application.yml` 端口（默认 8080）→ 9280
-- ❌ 改数据库连接（默认 localhost:3306/ry-vue）→ localhost:6306/nev_v2
-- ❌ docker-compose 起 MySQL 6306 + Redis 6379
-- ❌ 跑 RuoYi 自带 SQL（`backend/script/sql/ry_vue_5.X.sql`）
-- ❌ 启动 backend 跑通 admin/admin123 登录
-- ❌ 新增 7 角色（producer/distributor/retailer/merchant/consumer/recycler）
+| # | 任务 | 结果 |
+|---|---|---|
+| 1 | 写 `deploy/docker/docker-compose.yml`（MySQL 8.0.42 端口 13306 + Redis 7.4.1 端口 6379）| ✓ |
+| 2 | 写 `deploy/docker/.env.example` + `.gitignore` 排除 `.env` 和 `volumes/` | ✓ |
+| 3 | Docker 容器启动并 healthy | ✓ |
+| 4 | 改 `application.yml` 端口 → 9280 | ✓ |
+| 5 | 改 `application-dev.yml` 数据源 → `localhost:13306/nev_v2` + Redis db=1 | ✓ |
+| 6 | 导入 SQL：`ry_vue_5.X.sql` + `ry_workflow.sql` + `ry_job.sql`（59 张表）| ✓ |
+| 7 | 开发环境关闭接口加密 `api-decrypt.enabled: false` | ✓ |
+| 8 | 开发环境关闭验证码 `captcha.enable: false` | ✓ |
+| 9 | `mvn install -DskipTests` 全量编译通过（33 模块）| ✓ |
+| 10 | 启动 backend 端口 9280 正常 | ✓ |
+| 11 | **admin/admin123 登录成功，返回 JWT token** | ✓ |
+| 12 | Token 访问受保护接口 `/system/user/getInfo` 返回 200 | ✓ |
 
-这些是 **Wave 1 D2 的工作**。
+### 2.4 D2 关键发现（踩坑记录）
+
+- **登录请求体格式**：`clientId` 必须在 body 中（不是 header），值为 `sys_client` 表的 `client_id` 哈希值
+- **正确登录 payload**：
+  ```json
+  {
+    "clientId": "e5cd7e4891bf95d1d19206ce24a7b32e",
+    "grantType": "password",
+    "username": "admin",
+    "password": "admin123",
+    "tenantId": "000000"
+  }
+  ```
+- **受保护接口调用**：需要 `Authorization: Bearer <token>` + `clientid: <client_id>` 两个 header
+- **MySQL 端口**：最终用 13306（避开老仓 WeBASE 23306 和默认 3306）
+- **Redis 隔离**：共用 6379 端口，通过 `database=1` 与老仓隔离
+- **SQL 导入**：必须加 `--default-character-set=utf8mb4`，否则中文昵称超长报错
 
 ---
 
@@ -197,8 +222,8 @@ py -3 -m vgo_cli.main canonical-entry `
 | Backend API | 9180 | **9280** |
 | Admin Web | 8020 | **8120** |
 | User App (H5) | 5173 | **5273** |
-| MySQL | 23306（WeBASE 用） | **6306** |
-| Redis | 6379 | 6379（共用，不冲突） |
+| MySQL | 23306（WeBASE 用） | **13306** |
+| Redis | 6379 | 6379（共用，database=1 隔离） |
 | WeBASE | 5000-5004 | 共用，但合约地址不同 |
 
 ### 4.4 角色体系（7 角色完整产业链）
@@ -353,32 +378,20 @@ RuoYi 作者已预留 JDK 21 镜像，注释互换即可，零风险。
 
 ## 7. 接下来要做（Wave 1 D2 + 后续）
 
-### 7.1 紧接 Wave 1 D2（推荐下一步）
+### 7.1 紧接 Wave 1 D3-D4（推荐下一步）
 
-按执行计划 `docs/plans/2026-05-14-*-execution-plan.md` §2.2 D2：
+按执行计划 `docs/plans/2026-05-14-*-execution-plan.md` §2.3 D3-D4：
 
-1. **写 docker-compose.yml**（位于 `deploy/docker/docker-compose.yml`）
-   - MySQL 8.x，端口 6306（避开老仓 WeBASE 的 23306）
-   - Redis 7.x，端口 6379
-   - 卷：`./volumes/mysql` `./volumes/redis`
-   - 密码：root / nev_v2_root_2026
+1. **设计 20 张 nev_* 业务表 SQL**
+   - 参照需求文档 §5 的表结构设计
+   - 写到 `backend/script/sql/nev_v2_business.sql`
+   - 在 MySQL 中执行建表
 
-2. **改 `backend/ruoyi-admin/src/main/resources/application-dev.yml`**
-   - server.port: 8080 → 9280
-   - spring.datasource.druid.master.url：改为 `jdbc:mysql://localhost:6306/nev_v2`
-   - spring.data.redis.host/port：localhost / 6379
-   - 检查所有 `:3306` 引用，改为 `:6306`
+2. **新增 7 角色到 sys_role 表**
+   - producer / distributor / retailer / merchant / consumer / recycler
+   - 配置对应菜单权限
 
-3. **导入 RuoYi 自带 SQL**
-   - `backend/script/sql/ry_vue_5.X.sql` → 新建库 nev_v2 后导入
-   - 验证 sys_user / sys_role / sys_menu 表就绪
-
-4. **启动 backend 验证**
-   - `cd backend && mvn -pl ruoyi-admin -am spring-boot:run`
-   - 访问 `http://localhost:9280/swagger-ui/index.html`
-   - admin/admin123 登录跑通
-
-5. **D2 末 git commit + tag wave-1-d2-running**
+3. **D3-D4 末 git commit + tag wave-1-d4-schema**
 
 ### 7.2 Wave 1 剩余（D3-D7）
 

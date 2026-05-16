@@ -22,8 +22,11 @@ mvnw.cmd
 *.log.*
 logs/
 spring-boot-*.log
-application-prod.yml
-application-prod.properties
+# NEV-v2: 默认忽略所有 application-prod.yml，避免 RuoYi 上游模板的硬编码密码进库
+**/application-prod.yml
+**/application-prod.properties
+# 例外：ruoyi-admin 的 prod.yml 已改造为 ${ENV:default} 占位符模板，可入库
+!backend/ruoyi-admin/src/main/resources/application-prod.yml
 application-secret.yml
 application-secret.properties
 
@@ -172,3 +175,6 @@ allure-report/
 
 # JaCoCo
 jacoco.exec
+
+# spec-workflow MCP 工具产物（不入库）
+.spec-workflow/
