@@ -4,8 +4,8 @@
 > 新对话框只需要让 Claude 先读完本文档，就能无损接上之前的所有进度、约定、踩过的坑。
 >
 > **创建日期**：2026-05-15
-> **最后更新**：2026-05-19
-> **当前进度**：Wave 1 D4 已完成（20 张业务表建好 + 6 业务角色 + 20 业务菜单 + 角色菜单授权矩阵）
+> **最后更新**：2026-05-20
+> **当前进度**：Wave 1 已完成（D1-D7 全部交付，准备进入 Wave 2 D8 合约设计）
 > **位置**：`E:/Study/IdeaProjects/NEV-v2/HANDOFF.md`
 
 ---
@@ -158,6 +158,47 @@ a39204b  chore: import ruoyi-vue-plus 5.6.1 as backend/ skeleton
 - **role_id 安全范围**：已占用 1（superadmin）/ 3 / 4，本轮用 11-16，后续如需新角色用 20+。
 
 ### 2.6 D2 关键发现（踩坑记录）
+
+### 2.7 Wave 1 D5-D7 完成清单（2026-05-20）
+
+| # | 任务 | 结果 |
+|---|---|---|
+| 1 | 写 `backend/script/sql/nev_v2_seed_demo.sql`（分离基础 seed 与演示数据，便于生产部署只导基础 seed） | ✓ |
+| 2 | 6 个 demo 用户入库（user_id 101-106：producer1/distributor1/retailer1/merchant1/consumer1/recycler1，密码统一 admin123，复用 RuoYi admin 的 BCrypt hash） | ✓ |
+| 3 | `sys_user_role` 绑定 6 用户到对应业务角色 11-16 | ✓ |
+| 4 | `sys_nev_user_ext` 写入 6 行业务扩展（user_type + 占位 wallet_address `0x101..0001~0006` + 企业信息） | ✓ |
+| 5 | `nev_emission_factor` 灌 15 条排放因子（RAW 5/MFG 4/TRANS 3/USE 2/EOL 1），含中国电网平均电力 0.5703 kgCO2eq/kWh + 关键金属碳排放（锂/钴/镍/铜/铝），来源 CLCD/Ecoinvent/IPCC/生态环境部 | ✓ |
+| 6 | 商品分类字典 `nev_product_category`：BATTERY/ACCESSORY/SERVICE（sys_dict_type id=100，sys_dict_data 1001-1003） | ✓ |
+| 7 | `mvn clean install -DskipTests -T 4` 全量编译通过（33 模块） | ✓ |
+| 8 | 启动 backend 端口 9280 正常 | ✓ |
+| 9 | producer1 / admin123 登录返回 JWT token（userId=101, roles=['producer']） | ✓ |
+| 10 | `/system/user/getInfo` 返回 4 项权限：`nev:battery:register, nev:battery:query, nev:carbon:footprint, nev:blockchain:trace` —— 完全匹配 D4 设计的权限矩阵 | ✓ |
+| 11 | `/system/menu/getRouters` 返回 3 个目录（Battery / Carbon / Blockchain）+ 4 个子页面，共 7 项，匹配 producer=7 项授权 | ✓ |
+
+### 2.8 D5-D7 关键发现
+
+- **演示数据分文件好处**：`nev_v2_seed.sql`（基础：角色+菜单）和 `nev_v2_seed_demo.sql`（演示：用户+因子+字典）分开，生产部署可只导基础 seed 不污染。
+- **统一密码 BCrypt**：6 个 demo 用户复用 RuoYi admin 的 hash `$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2`，明文都是 admin123，免去运行时生成 hash。
+- **wallet_address 占位**：写入 `0x101..0101 ~ 0x101..0106` 占位地址，Wave 2 D11 部署 RoleManager 合约后用真实 FISCO BCOS account 回填。
+- **`sys_nev_user_ext` 主键即外键**：以 user_id 直接做主键（不是独立 id），1:1 关联 sys_user 不需要额外 join 列。
+- **producer 菜单数 7 = 3 目录 + 4 页面**：getRouters 自动按 parent_id 折叠成 children 树，无需后端额外处理。RuoYi 路由系统自动隐藏当前角色无权限的子菜单。
+- **`getInfo` permissions 返回**：只包含 `menu_type='C'/'F'` 的 perms 字段（目录不带 perms），所以 producer 拿到 4 项权限 = 4 个 C 菜单，符合 RuoYi 设计。
+- **demo 用户登录密码同 admin**：用户都用 `admin123`，验证完全等同 D2 admin 登录路径，无新协议变更。
+
+### 2.9 Wave 1 全部交付清单
+
+```
+D1  ✓  RuoYi 5.6.1 脚手架 + JDK 21 + 包名 com.nev（wave-1-d1-renamed）
+D2  ✓  Docker (MySQL 13306 + Redis 6379) + admin/admin123 登录（wave-1-d2-running）
+D3  ✓  20 张 nev_* 业务表 SQL + 入库验证
+D4  ✓  6 业务角色 + 20 业务菜单 + 权限矩阵（wave-1-d4-schema）
+D5  ✓  6 demo 用户（每角色 1 个）+ 15 排放因子
+D6  ✓  商品分类字典 + 全部 demo seed 入库
+D7  ✓  全量编译 + producer1 登录验证 + 菜单授权矩阵端到端通过（wave-1-end）
+```
+
+**总计可启动可登录可演示的最小可用版本**：MySQL 79 张表（59 sys_* + 20 nev_*）、7 角色（admin+6 业务）、7 用户、20 业务菜单、15 排放因子。
+
 
 - **登录请求体格式**：`clientId` 必须在 body 中（不是 header），值为 `sys_client` 表的 `client_id` 哈希值
 - **正确登录 payload**：
@@ -402,28 +443,34 @@ RuoYi 作者已预留 JDK 21 镜像，注释互换即可，零风险。
 
 ---
 
-## 7. 接下来要做（Wave 1 D2 + 后续）
+## 7. 接下来要做（Wave 2 D8 起）
 
-### 7.1 紧接 Wave 1 D3-D4（推荐下一步）
+### 7.1 紧接 Wave 2 D8-D11（推荐下一步）
 
-按执行计划 `docs/plans/2026-05-14-*-execution-plan.md` §2.3 D3-D4：
+进入 **Wave 2：Battery + Blockchain（D8-D14）**。按执行计划：
 
-1. **设计 20 张 nev_* 业务表 SQL**
-   - 参照需求文档 §5 的表结构设计
-   - 写到 `backend/script/sql/nev_v2_business.sql`
-   - 在 MySQL 中执行建表
+1. **D8-D9：合约设计**
+   - 直接参照 `E:/Study/IdeaProjects/NEV/2026037462/` 三层合约（RoleManager / BatteryRegistry / LifecycleTrace）
+   - Solidity 0.6.10，部署到 FISCO BCOS（沿用老仓 WeBASE 5000-5004 端口）
+   - 输出到 `contracts/` 目录 + 写 `docs/contracts/` 设计说明
 
-2. **新增 7 角色到 sys_role 表**
-   - producer / distributor / retailer / merchant / consumer / recycler
-   - 配置对应菜单权限
+2. **D10-D11：nev-blockchain 模块**
+   - 新建 Maven 子模块 `nev-modules/nev-blockchain`
+   - 引入 `webase-app-sdk 1.5.5`
+   - 封装 `BlockchainClient`、`RoleContractService`、`BatteryContractService`、`LifecycleContractService`
+   - 部署合约后回填 `nev_contract_config` 表
+   - 把 6 个 demo 用户的 wallet_address 占位换成真链 account
 
-3. **D3-D4 末 git commit + tag wave-1-d4-schema**
+3. **D12-D14：nev-battery 模块**
+   - 新建 `nev-modules/nev-battery`
+   - 实现电池注册（producer）+ 流通（distributor/retailer）+ 查询（任意角色）
+   - 每次状态变更同步上链 + 二维码生成
 
-### 7.2 Wave 1 剩余（D3-D7）
+### 7.2 Wave 1 旧规划已全部完成
 
-- D3-4: 设计 20 张 nev_* 业务表 SQL（已在需求文档 §5 列好），写到 `backend/src/main/resources/sql/nev_v2_business.sql`，建表
-- D5-6: 写 `nev_v2_seed.sql`：7 角色 + 菜单权限 + demo 用户 + 排放因子 + 商品分类
-- D7: Wave 1 cleanup + tag wave-1-end
+～～D3-D4 设计 20 张 nev_* 业务表 SQL～～ ✓ 完成
+～～D5-D6 写 nev_v2_seed.sql：7 角色 + 菜单权限 + demo 用户 + 排放因子 + 商品分类～～ ✓ 完成（分两文件）
+～～D7 Wave 1 cleanup + tag wave-1-end～～ ✓ 完成
 
 ### 7.3 后续 Wave 概要
 
