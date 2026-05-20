@@ -53,6 +53,11 @@ build/
 .parcel-cache/
 .turbo/
 .next/
+
+# Contracts build artifacts MUST be committed (D9 solc output, D10 web3j input,
+# D11 deployment source). Whitelist them out of the generic build/ rule above.
+!contracts/build/
+!contracts/build/**
 .nuxt/
 *.local
 
