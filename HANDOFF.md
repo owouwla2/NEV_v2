@@ -4,8 +4,8 @@
 > 新对话框只需要让 Claude 先读完本文档，就能无损接上之前的所有进度、约定、踩过的坑。
 >
 > **创建日期**：2026-05-15
-> **最后更新**：2026-05-16
-> **当前进度**：Wave 1 D2 已完成（后端可启动 + admin 登录验证通过）
+> **最后更新**：2026-05-19
+> **当前进度**：Wave 1 D4 已完成（20 张业务表建好 + 6 业务角色 + 20 业务菜单 + 角色菜单授权矩阵）
 > **位置**：`E:/Study/IdeaProjects/NEV-v2/HANDOFF.md`
 
 ---
@@ -131,7 +131,33 @@ a39204b  chore: import ruoyi-vue-plus 5.6.1 as backend/ skeleton
 | 11 | **admin/admin123 登录成功，返回 JWT token** | ✓ |
 | 12 | Token 访问受保护接口 `/system/user/getInfo` 返回 200 | ✓ |
 
-### 2.4 D2 关键发现（踩坑记录）
+### 2.4 Wave 1 D3-D4 完成清单（2026-05-19）
+
+| # | 任务 | 结果 |
+|---|---|---|
+| 1 | 写 `backend/script/sql/nev_v2_business.sql`（20 张业务表，对齐需求文档 §5.2） | ✓ |
+| 2 | 7 个分组覆盖：用户扩展 / 电池溯源 / 商城 / 支付与地址 / 以旧换新 / 碳模块 / 区块链配置 | ✓ |
+| 3 | 公共字段全部对齐 RuoYi 风格：`create_by/update_by bigint(20)` + `tenant_id` + `del_flag` | ✓ |
+| 4 | Docker 容器健康（mysql/redis），`docker exec` 执行业务 SQL 无报错 | ✓ |
+| 5 | 数据库验证：`select count(*) from information_schema.tables where ...` = 20 张 | ✓ |
+| 6 | 写 `backend/script/sql/nev_v2_seed.sql`（6 角色 + 20 菜单 + 角色绑定矩阵） | ✓ |
+| 7 | 6 个业务角色入库：producer/distributor/retailer/merchant/consumer/recycler（role_id 11-16） | ✓ |
+| 8 | 20 个业务菜单入库（menu_id 2001-2061，6 目录 + 14 页面） | ✓ |
+| 9 | 角色菜单绑定按需求文档 §3.3 矩阵：producer=7 / distributor=5 / retailer=8 / merchant=5 / consumer=10 / recycler=8 / superadmin=20 | ✓ |
+| 10 | admin 通过 sys_role_menu 自动获得全部 20 项业务菜单（select ... from sys_menu where menu_id between 2001 and 2999） | ✓ |
+
+**vibe 治理痕迹**：本轮启动 canonical vibe-do-it（stop=plan_execute）创建了 session `20260519T142922Z-218f92b8`，四件证据齐全（host-launch-receipt / runtime-input-packet / governance-capsule / stage-lineage），但 router 状态 `route_mode=confirm_required, confidence=0.45, route_reason=legacy_fallback_guard`，未推进到 plan_execute。**按 FAQ Q3 D3-D4 SQL 是按需求文档 §5.2/§3.3 已定计划的纯执行性任务，简化跳过完整 vibe 流程**，session 保留作为治理痕迹。后续重大决策（合约设计 D8）必须重新走完整 vibe。
+
+### 2.5 D3-D4 关键发现
+
+- **vibe entry-id 笔误**：HANDOFF.md §3.3 写的 `vibe-do` 是错的，正确名是 `vibe-do-it`（详见 `config/vibe-entry-surfaces.json`）。已在 §3.3 修正。
+- **stage 名称完整列表**：`skeleton_check → deep_interview → requirement_doc → xl_plan → plan_execute → phase_cleanup`，HANDOFF 旧版只列了 3 个（缺 deep_interview/plan_execute/skeleton_check）。
+- **router 需 host-decision 协议**：runtime 在 `skeleton_check` 后等待 host 提供 `decision_kind=route_selection, decision_action=accept_primary/select_skill` 的 JSON 决策，需配合 `--continue-from-run-id` 重入。本轮没走这一步。
+- **RuoYi `create_by/update_by` 是 bigint(20)**（用户 ID），需求文档 §5.3 写的 `VARCHAR(64)` 不对，会破坏 MyBatis-Plus 字段自动填充。新表全部按 RuoYi 风格落 bigint(20)。
+- **menu_id 安全范围**：现存最大 menu_id=1623，本轮用 2001-2061，毕设阶段扩展可继续 2100+。
+- **role_id 安全范围**：已占用 1（superadmin）/ 3 / 4，本轮用 11-16，后续如需新角色用 20+。
+
+### 2.6 D2 关键发现（踩坑记录）
 
 - **登录请求体格式**：`clientId` 必须在 body 中（不是 header），值为 `sys_client` 表的 `client_id` 哈希值
 - **正确登录 payload**：
@@ -176,7 +202,7 @@ py -3 -m vgo_cli.main canonical-entry `
   --repo-root "C:\Users\Administrator\.claude\skills\vibe" `
   --artifact-root "E:\Study\IdeaProjects\NEV-v2" `   # ⭐ 切到新仓
   --host-id "claude-code" `
-  --entry-id "vibe-do" `                              # 或 vibe / vibe-want / vibe-how
+  --entry-id "vibe-do-it" `                           # 可选：vibe / vibe-what-do-i-want / vibe-how-do-we-do / vibe-do-it / vibe-upgrade
   --prompt "<keyword intent text>" `
   --requested-stage-stop plan_execute                 # 或 requirement_doc / xl_plan / phase_cleanup
 ```
