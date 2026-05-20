@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.nev</groupId>
+        <artifactId>nev-modules</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>nev-blockchain</artifactId>
+
+    <description>
+        nev-blockchain FISCO BCOS 区块链交互模块
+        - 通过 WeBASE-Front HTTP API 调用智能合约（无需引入区块链 SDK）
+        - 合约地址 / ABI 从 nev_contract_config 表动态加载（运行时支持多合约 / 多版本切换）
+        - Wave 2 D10 起，承接 Wave 2 D8-D9 编译的三个合约（contracts/build/*）
+    </description>
+
+    <dependencies>
+        <!-- 通用工具 + 异常体系 + 雪花 ID -->
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>ruoyi-common-core</artifactId>
+        </dependency>
+
+        <!-- Spring MVC + RestClient（调用 WeBASE-Front HTTP API） -->
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>ruoyi-common-web</artifactId>
+        </dependency>
+
+        <!-- MyBatis-Plus + 数据源（读 nev_contract_config 表） -->
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>ruoyi-common-mybatis</artifactId>
+        </dependency>
+
+        <!-- Jackson JSON（与 RuoYi 全局保持一致） -->
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>ruoyi-common-json</artifactId>
+        </dependency>
+
+        <!-- 日志切面（链调用全程留痕） -->
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>ruoyi-common-log</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

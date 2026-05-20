@@ -87,6 +87,13 @@
             <artifactId>ruoyi-demo</artifactId>
         </dependency>
 
+        <!-- nev-blockchain：FISCO BCOS 区块链交互（Wave 2 D10 起） -->
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>nev-blockchain</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
         <!--  工作流模块  -->
         <dependency>
             <groupId>com.nev</groupId>

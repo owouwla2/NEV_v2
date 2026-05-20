@@ -277,3 +277,19 @@ justauth:
       client-id: 10**********6
       client-secret: 1f7d08**********5b7**********29e
       redirect-uri: ${justauth.address}/social-callback?source=gitea
+
+
+# ============================================================
+# NEV-v2 区块链配置（Wave 2 D10 引入；D11 部署后填 address + signUserId）
+# ============================================================
+nev:
+  blockchain:
+    webaseFrontUrl: http://localhost:5002
+    groupId: 1
+    defaultSignUserId: nev_admin  # D11 通过 WeBASE-Sign 创建实际用户后更新
+    timeout: 30000
+    contracts:
+      LifecycleTrace:
+        address: '0x0000000000000000000000000000000000000000'  # D11 部署后回填
+        path: /
+        # signUserId 留空则用 defaultSignUserId

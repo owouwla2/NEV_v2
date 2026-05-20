@@ -365,6 +365,7 @@
         <module>ruoyi-common</module>
         <module>ruoyi-extend</module>
         <module>ruoyi-modules</module>
+        <module>nev-modules</module>
     </modules>
     <packaging>pom</packaging>
 

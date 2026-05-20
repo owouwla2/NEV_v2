@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>nev-backend</artifactId>
+        <groupId>com.nev</groupId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <modules>
+        <module>nev-blockchain</module>
+    </modules>
+
+    <artifactId>nev-modules</artifactId>
+    <packaging>pom</packaging>
+
+    <description>
+        nev-modules NEV-v2 业务模块（与 ruoyi-modules 并列）
+        - nev-blockchain: FISCO BCOS 区块链交互（Wave 2 D10 起）
+        - nev-battery   : 电池溯源业务（Wave 2 D12 起，待建）
+        - nev-marketplace: 商城（Wave 3 D17 起，待建）
+        - nev-carbon    : 碳核算（Wave 3 D20 起，待建）
+    </description>
+
+</project>
