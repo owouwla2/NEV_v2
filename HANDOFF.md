@@ -509,40 +509,45 @@ RuoYi 作者已预留 JDK 21 镜像，注释互换即可，零风险。
 
 ---
 
-## 7. 接下来要做（Wave 2 D9 起）
+## 7. 接下来要做（Wave 2 D11 起）
 
-### 7.1 紧接 Wave 2 D9（推荐下一步）
+### 7.1 紧接 Wave 2 D11（推荐下一步）
 
-D8 设计已冻结（tag `wave-2-d8-contracts`），下一步：
+D10 模块基础设施已就绪（tag `wave-2-d10-blockchain-module`），D11 进入实际部署阶段（首次涉及交互操作，建议你亲自点）：
 
-1. **D9：合约编译**
-   - 用 `solc 0.6.10` 编译 `contracts/*.sol`，输出 `contracts/build/LifecycleTrace.{bin,abi}`
-   - solc 安装方案：
-     a) 本地 `npm i -g solc@0.6.10` → `solcjs --bin --abi contracts/LifecycleTrace.sol`
-     b) Docker 一次性容器：`docker run --rm -v $(pwd)/contracts:/src ethereum/solc:0.6.10 ...`
-     c) 直接通过 WeBASE-Front Web UI 上传 → 自动编译（推荐，省工具链安装）
-   - 验证：`bin` 文件非空且 > 1KB（老仓 LifecycleTrace 编译产物约 8KB）
+1. **D11-步 1：通过 WeBASE-Front Web UI 部署 LifecycleTrace**
+   - 浏览器打开 http://localhost:5002/WeBASE-Front
+   - 合约管理 → 合约 IDE → 新建合约 → 粘贴 `contracts/LifecycleTrace.sol`（自动 import 父合约）
+   - 选 group=1 → 编译验证 → 部署 → 记录 `contract_address`（0x... 42 字符）
 
-2. **D10-D11：nev-blockchain 模块 + 部署**
-   - 新建 `nev-modules/nev-blockchain` Maven 子模块
-   - 引入 `org.dromara:webase-app-sdk:1.5.5`（项目已有依赖管理）
-   - web3j 0.6.10 plugin 生成 Java wrapper：`LifecycleTrace.java`
-   - 通过 WeBASE-Front HTTP API 部署 → 回写 `nev_contract_config(contract_name='LifecycleTrace', contract_address='0x...', abi=...)`
-   - 替换 6 个 demo 用户 wallet_address 占位（`0x101..0101~0106`）为真链 account
-   - 用 ADMIN 调用 `grantRole(account, role)` 完成链上 6 次授权
+2. **D11-步 2：创建 WeBASE 签名用户**
+   - WeBASE-Sign → 私钥管理 → 新增 userId="nev_admin"（合约部署者就是 ADMIN）
+   - 再为 6 个 demo 用户各创建 1 个：nev_producer1 / nev_distributor1 / ... 记录每个的 wallet_address
 
-3. **D12-D14：nev-battery 模块**
-   - `nev-modules/nev-battery`
-   - producer 注册电池 → 写 MySQL + dataHash + 调 `registerBattery` 上链
-   - distributor/retailer/recycler 写各自 EventType 事件
-   - 二维码生成（jcommon `qrcode-utils` 或 zxing）
+3. **D11-步 3：回写数据库**
+   - `INSERT INTO nev_contract_config(contract_name, contract_address, abi, deployed_at, network, enabled) VALUES ('LifecycleTrace', '0x...', '<abi-json>', NOW(), 'fisco-bcos', '1');`
+   - `UPDATE sys_nev_user_ext SET wallet_address = '<real-addr>' WHERE user_id = 101;` （producer1，重复 102-106）
+   - `UPDATE application-dev.yml` 把 `nev.blockchain.contracts.LifecycleTrace.address` 改成真实地址（或留 0x0 让 ContractAddressResolver 走表查询）
 
-### 7.2 Wave 1 旧规划已全部完成
+4. **D11-步 4：链上授权 6 角色**
+   - 启动 backend 用 admin 登录，写一个临时端点或 H2 console 用 ADMIN account 跑 6 次 `grantRole(account, role)` → 让 6 个 demo 用户拿到链上 Role
 
-～～D3-D4 设计 20 张 nev_* 业务表 SQL～～ ✓ 完成
-～～D5-D6 写 nev_v2_seed.sql：7 角色 + 菜单权限 + demo 用户 + 排放因子 + 商品分类～～ ✓ 完成（分两文件）
-～～D7 Wave 1 cleanup + tag wave-1-end～～ ✓ 完成
-～～D8 三合约设计～～ ✓ 完成（tag wave-2-d8-contracts）
+5. **D11-步 5：smoke test**
+   - producer1 调用 `registerBattery("BAT-DEMO-001", keccak256(spec_json))` → 链上回执
+   - 任何角色 query `getBatteryInfo("BAT-DEMO-001")` → 返回链上数据 ✓
+   - tag `wave-2-d11-deployed`
+
+6. **D12-D14：nev-battery 业务模块**
+   - 完整业务流：producer 注册电池（MySQL + 上链 PRODUCED）+ 二维码
+   - distributor/retailer/recycler 事件上报
+   - 消费者扫码端点 `/api/public/scan/{traceNumber}` 返回链上校验过的溯源历史
+
+### 7.2 历史 Wave 完成情况
+
+～～Wave 1 D1-D7 全部交付～～ ✓（tag wave-1-end）
+～～Wave 2 D8 三合约设计～～ ✓（tag wave-2-d8-contracts）
+～～Wave 2 D9 合约编译～～ ✓（tag wave-2-d9-compiled）
+～～Wave 2 D10 nev-blockchain 模块～～ ✓（tag wave-2-d10-blockchain-module）
 
 ### 7.3 后续 Wave 概要
 
