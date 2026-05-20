@@ -14,7 +14,7 @@ import "./BatteryRegistry.sol";
  *     去 GRADIENT_UTILIZED（梯次利用归到毕设阶段），加 SOLD（新仓"零售商→消费者"环节强需求）
  *   - 用 string traceNumber 作 key（同 BatteryRegistry，链上链下 ID 对齐）
  *
- * 事件触发权限（链上仅做基础校验，业务侧权限在后端 RuoYi @SaCheckRole 处理）：
+ * 事件触发权限（链上仅做基础校验，业务侧权限在后端 RuoYi 的 Sa-Token SaCheckRole 注解处理）：
  *   PRODUCED  ← PRODUCER     注册电池时自动触发
  *   IN_USE    ← DISTRIBUTOR  经销商接收 / 转运
  *   SOLD      ← RETAILER     零售商售出给消费者
