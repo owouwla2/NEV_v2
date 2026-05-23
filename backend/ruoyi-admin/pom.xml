@@ -108,6 +108,13 @@
             <version>${revision}</version>
         </dependency>
 
+        <!-- nev-carbon：碳核算业务（Wave 3 D18 起） -->
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>nev-carbon</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
         <!--  工作流模块  -->
         <dependency>
             <groupId>com.nev</groupId>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.nev</groupId>
+        <artifactId>nev-modules</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>nev-carbon</artifactId>
+
+    <description>
+        nev-carbon 碳核算业务模块
+        - 5 阶段碳足迹算法（RAW/MFG/TRANS/USE/EOL）
+        - 碳积分账户 + 流水
+        - 公开扫码端点附加碳足迹信息（D20）
+        - 老仓 NEV/backend/.../CarbonCalculationService.java 算法迁移基础
+    </description>
+
+    <dependencies>
+        <!-- 依赖 nev-battery：通过 battery 信息计算碳足迹 -->
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>nev-battery</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>ruoyi-common-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>ruoyi-common-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>ruoyi-common-mybatis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>ruoyi-common-json</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>ruoyi-common-satoken</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>ruoyi-common-log</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

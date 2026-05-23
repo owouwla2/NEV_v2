@@ -13,6 +13,7 @@
         <module>nev-blockchain</module>
         <module>nev-battery</module>
         <module>nev-marketplace</module>
+        <module>nev-carbon</module>
     </modules>
 
     <artifactId>nev-modules</artifactId>
