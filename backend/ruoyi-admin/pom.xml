@@ -101,6 +101,13 @@
             <version>${revision}</version>
         </dependency>
 
+        <!-- nev-marketplace：商城业务（Wave 3 D15 起） -->
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>nev-marketplace</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
         <!--  工作流模块  -->
         <dependency>
             <groupId>com.nev</groupId>
