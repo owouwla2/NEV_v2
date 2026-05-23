@@ -69,7 +69,14 @@ public class ContractInvoker {
      * @param funcParams   方法参数列表（按 Solidity 函数签名顺序）
      */
     public ChainCallResult invoke(String contractName, String funcName, List<Object> funcParams) {
-        Map<String, Object> body = buildBaseBody(contractName, funcName, funcParams);
+        return invokeAs(null, contractName, funcName, funcParams);
+    }
+
+    /**
+     * 写链调用（指定调用者钱包地址，必须已在 WeBASE-Front 5002 本地私钥库导入）
+     */
+    public ChainCallResult invokeAs(String userAddress, String contractName, String funcName, List<Object> funcParams) {
+        Map<String, Object> body = buildBaseBody(userAddress, contractName, funcName, funcParams);
         return doRequest("/WeBASE-Front/trans/handle", body, true);
     }
 
@@ -78,16 +85,25 @@ public class ContractInvoker {
      * 同样走 /WeBASE-Front/trans/handle —— WeBASE-Front 内部根据 ABI 自动判断 view 函数不上链不消耗 gas
      */
     public ChainCallResult query(String contractName, String funcName, List<Object> funcParams) {
-        Map<String, Object> body = buildBaseBody(contractName, funcName, funcParams);
+        return queryAs(null, contractName, funcName, funcParams);
+    }
+
+    /**
+     * 读链调用（指定调用者钱包地址；view 函数其实无需签名，但 user 字段 WeBASE 要求填一个有效地址）
+     */
+    public ChainCallResult queryAs(String userAddress, String contractName, String funcName, List<Object> funcParams) {
+        Map<String, Object> body = buildBaseBody(userAddress, contractName, funcName, funcParams);
         return doRequest("/WeBASE-Front/trans/handle", body, false);
     }
 
     // ---------------------------------------------------------------
 
-    private Map<String, Object> buildBaseBody(String contractName, String funcName, List<Object> funcParams) {
+    private Map<String, Object> buildBaseBody(String overrideUserAddress, String contractName, String funcName, List<Object> funcParams) {
         String address = addressResolver.resolveAddress(contractName);
         String abiJson = addressResolver.resolveAbi(contractName);
-        String userAddress = addressResolver.resolveUserAddress(contractName);
+        String userAddress = (overrideUserAddress != null && !overrideUserAddress.isBlank())
+            ? overrideUserAddress
+            : addressResolver.resolveUserAddress(contractName);
         String contractPath = addressResolver.resolvePath(contractName);
 
         List<Map<String, Object>> abiList = parseAbi(abiJson);

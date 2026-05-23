@@ -9,50 +9,48 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nev-blockchain</artifactId>
+    <artifactId>nev-battery</artifactId>
 
     <description>
-        nev-blockchain FISCO BCOS 区块链交互模块
-        - 通过 WeBASE-Front HTTP API 调用智能合约（无需引入区块链 SDK）
-        - 合约地址 / ABI 从 nev_contract_config 表动态加载（运行时支持多合约 / 多版本切换）
-        - Wave 2 D10 起，承接 Wave 2 D8-D9 编译的三个合约（contracts/build/*）
+        nev-battery 电池溯源业务模块
+        - producer 注册电池（写 MySQL + 上链 PRODUCED）
+        - distributor / retailer / recycler 事件上报
+        - 二维码生成 + 公开扫码端点
+        - Wave 2 D12 起，依赖 nev-blockchain
     </description>
 
     <dependencies>
-        <!-- 通用工具 + 异常体系 + 雪花 ID -->
+        <!-- 链上交互：ContractInvoker + ContractAddressResolver -->
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>nev-blockchain</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- ruoyi 通用栈 -->
         <dependency>
             <groupId>com.nev</groupId>
             <artifactId>ruoyi-common-core</artifactId>
         </dependency>
-
-        <!-- Spring MVC + RestClient（调用 WeBASE-Front HTTP API） -->
         <dependency>
             <groupId>com.nev</groupId>
             <artifactId>ruoyi-common-web</artifactId>
         </dependency>
-
-        <!-- MyBatis-Plus + 数据源（读 nev_contract_config 表） -->
         <dependency>
             <groupId>com.nev</groupId>
             <artifactId>ruoyi-common-mybatis</artifactId>
         </dependency>
-
-        <!-- Jackson JSON（与 RuoYi 全局保持一致） -->
         <dependency>
             <groupId>com.nev</groupId>
             <artifactId>ruoyi-common-json</artifactId>
         </dependency>
-
-        <!-- 日志切面（链调用全程留痕） -->
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>ruoyi-common-satoken</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.nev</groupId>
             <artifactId>ruoyi-common-log</artifactId>
-        </dependency>
-
-        <!-- BouncyCastle: keccak256（bcpkix 在 BOM 管理，传递依赖 bcprov 含 Keccak.Digest256） -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk18on</artifactId>
         </dependency>
     </dependencies>
 

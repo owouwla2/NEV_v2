@@ -94,6 +94,13 @@
             <version>${revision}</version>
         </dependency>
 
+        <!-- nev-battery：电池溯源业务（Wave 2 D12 起） -->
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>nev-battery</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
         <!--  工作流模块  -->
         <dependency>
             <groupId>com.nev</groupId>

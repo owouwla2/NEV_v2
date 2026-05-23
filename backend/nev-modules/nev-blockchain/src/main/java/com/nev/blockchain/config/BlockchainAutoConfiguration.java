@@ -1,5 +1,6 @@
 package com.nev.blockchain.config;
 
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -9,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
  *
  * - 启用 BlockchainProperties 配置绑定
  * - 扫描 com.nev.blockchain 下的所有 @Component / @Service
+ * - 扫描 com.nev.blockchain.mapper 下的 MyBatis-Plus Mapper
  *
  * 由 ruoyi-admin 启动类（@SpringBootApplication("com.nev")）自动扫描到本类
  *
@@ -17,5 +19,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @EnableConfigurationProperties(BlockchainProperties.class)
 @ComponentScan("com.nev.blockchain")
+@MapperScan("com.nev.blockchain.mapper")
 public class BlockchainAutoConfiguration {
 }
