@@ -215,6 +215,45 @@ public class BatteryService {
     }
 
     // ==========================================================================
+    // SOLD by Marketplace — 跨模块入口（nev-marketplace 订单完成时调用）
+    // 不走 LoginHelper / requireOperator，由调用方传入 merchant 上下文
+    // ==========================================================================
+
+    /**
+     * 商城订单完成时触发 SOLD 事件
+     * @param traceNumber 电池业务编号
+     * @param merchantUserId 商家用户ID（链上 operator）
+     * @param merchantWalletAddress 商家钱包地址（Front 本地私钥库必须已导入）
+     * @param orderNo 商城订单号（计入 dataHash）
+     * @param consumerId 购买消费者用户ID（计入 dataHash + 转移 owner）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public BatteryEventVO recordSoldByMerchant(
+        String traceNumber, Long merchantUserId, String merchantWalletAddress,
+        String orderNo, Long consumerId
+    ) {
+        if (!StringUtils.hasText(traceNumber) || merchantUserId == null
+            || !StringUtils.hasText(merchantWalletAddress) || consumerId == null) {
+            throw new ServiceException("recordSoldByMerchant 参数不全");
+        }
+        OperatorContext op = new OperatorContext(merchantUserId, merchantWalletAddress, "merchant");
+        return appendEvent(
+            "SOLD", EVT_SOLD, op, traceNumber,
+            (now) -> DataHashCalculator.sold(
+                traceNumber, orderNo, consumerId, toLdt(now)),
+            (now) -> serializePayload(Map.of(
+                "orderNo",    orderNo,
+                "consumerId", consumerId,
+                "merchantUserId", merchantUserId,
+                "soldAt",     toLdt(now).toString(),
+                "via",        "marketplace"
+            )),
+            "consumer",
+            consumerId
+        );
+    }
+
+    // ==========================================================================
     // Helpers
     // ==========================================================================
 

@@ -5,12 +5,16 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nev.battery.domain.SysNevUserExtDO;
+import com.nev.battery.mapper.SysNevUserExtMapper;
+import com.nev.battery.service.BatteryService;
 import com.nev.common.core.exception.ServiceException;
 import com.nev.common.satoken.utils.LoginHelper;
 import com.nev.marketplace.domain.NevCartItemDO;
 import com.nev.marketplace.domain.NevMerchantDO;
 import com.nev.marketplace.domain.NevOrderDO;
 import com.nev.marketplace.domain.NevOrderItemDO;
+import com.nev.marketplace.domain.NevPaymentRecordDO;
 import com.nev.marketplace.domain.NevProductDO;
 import com.nev.marketplace.dto.AddressDTO;
 import com.nev.marketplace.dto.OrderCreateDTO;
@@ -20,6 +24,7 @@ import com.nev.marketplace.mapper.NevCartItemMapper;
 import com.nev.marketplace.mapper.NevMerchantMapper;
 import com.nev.marketplace.mapper.NevOrderItemMapper;
 import com.nev.marketplace.mapper.NevOrderMapper;
+import com.nev.marketplace.mapper.NevPaymentRecordMapper;
 import com.nev.marketplace.mapper.NevProductMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,6 +60,9 @@ public class OrderService {
     private final NevCartItemMapper cartItemMapper;
     private final NevProductMapper productMapper;
     private final NevMerchantMapper merchantMapper;
+    private final NevPaymentRecordMapper paymentMapper;
+    private final SysNevUserExtMapper userExtMapper;
+    private final BatteryService batteryService;
     private final ObjectMapper objectMapper;
 
     /** 从购物车选项创建订单（同一订单必须来自同一商家） */
@@ -132,8 +140,8 @@ public class OrderService {
             orderItems.add(oi);
         }
 
-        // 6. 删除已下单的 cart_item
-        cartItemMapper.deleteByIds(items.stream().map(NevCartItemDO::getId).collect(Collectors.toList()));
+        // 6. 物理删除已下单的 cart_item（绕过 @TableLogic，避免唯一索引复用冲突）
+        cartItemMapper.physicalDeleteByIds(items.stream().map(NevCartItemDO::getId).collect(Collectors.toList()));
 
         return toVo(order, orderItems, productMap, merchantMapper.selectById(merchantId));
     }
@@ -210,6 +218,142 @@ public class OrderService {
             }
         }
     }
+
+    /** consumer mock 支付：PENDING -> PAID + 写 nev_payment_record */
+    @Transactional(rollbackFor = Exception.class)
+    public OrderVO pay(Long orderId) {
+        Long userId = currentUserId();
+        NevOrderDO order = orderMapper.selectById(orderId);
+        if (order == null) throw new ServiceException("订单 [{}] 不存在", orderId);
+        if (!userId.equals(order.getUserId())) {
+            throw new ServiceException("无权支付他人订单");
+        }
+        if (!"PENDING".equals(order.getStatus())) {
+            throw new ServiceException("订单当前状态 [{}] 不可支付", order.getStatus());
+        }
+        Date now = new Date();
+        // 1. 写支付记录
+        NevPaymentRecordDO pay = new NevPaymentRecordDO();
+        pay.setOrderId(order.getId());
+        pay.setPaymentNo(generatePaymentNo());
+        pay.setAmount(order.getTotalAmount());
+        pay.setMethod("MOCK");
+        pay.setStatus("SUCCESS");
+        pay.setTradeNo(pay.getPaymentNo());
+        pay.setPaidAt(now);
+        pay.setTenantId("000000");
+        pay.setDelFlag("0");
+        paymentMapper.insert(pay);
+
+        // 2. 改订单状态
+        order.setStatus("PAID");
+        order.setPayAmount(order.getTotalAmount());
+        order.setPaidAt(now);
+        orderMapper.updateById(order);
+
+        return buildVo(order);
+    }
+
+    /** merchant 发货：PAID -> SHIPPED；校验是当前 merchant 自家订单 */
+    @Transactional(rollbackFor = Exception.class)
+    public OrderVO ship(Long orderId) {
+        Long userId = currentUserId();
+        NevOrderDO order = orderMapper.selectById(orderId);
+        if (order == null) throw new ServiceException("订单 [{}] 不存在", orderId);
+        NevMerchantDO m = findMerchantByUserId(userId);
+        if (m == null || !m.getId().equals(order.getMerchantId())) {
+            throw new ServiceException("无权对该订单发货");
+        }
+        if (!"PAID".equals(order.getStatus())) {
+            throw new ServiceException("订单当前状态 [{}] 不可发货", order.getStatus());
+        }
+        order.setStatus("SHIPPED");
+        order.setShippedAt(new Date());
+        orderMapper.updateById(order);
+        return buildVo(order);
+    }
+
+    /** consumer 确认收货：SHIPPED -> COMPLETED；含 batteryId 商品自动触发链上 SOLD */
+    @Transactional(rollbackFor = Exception.class)
+    public OrderVO confirm(Long orderId) {
+        Long userId = currentUserId();
+        NevOrderDO order = orderMapper.selectById(orderId);
+        if (order == null) throw new ServiceException("订单 [{}] 不存在", orderId);
+        if (!userId.equals(order.getUserId())) {
+            throw new ServiceException("无权确认他人订单");
+        }
+        if (!"SHIPPED".equals(order.getStatus())) {
+            throw new ServiceException("订单当前状态 [{}] 不可确认收货", order.getStatus());
+        }
+
+        // 1. 找商家 wallet
+        NevMerchantDO merchant = merchantMapper.selectById(order.getMerchantId());
+        if (merchant == null) {
+            throw new ServiceException("订单商家档案丢失");
+        }
+        SysNevUserExtDO merchantExt = userExtMapper.selectById(merchant.getUserId());
+        if (merchantExt == null || !StringUtils.hasText(merchantExt.getWalletAddress())) {
+            throw new ServiceException("商家用户 [{}] 未绑定钱包地址，无法触发链上 SOLD", merchant.getUserId());
+        }
+
+        // 2. 推进订单状态
+        Date now = new Date();
+        order.setStatus("COMPLETED");
+        order.setDeliveredAt(now);
+        order.setCompletedAt(now);
+        orderMapper.updateById(order);
+
+        // 3. 找所有含 batteryId 的订单明细，逐个触发链上 SOLD
+        LambdaQueryWrapper<NevOrderItemDO> iq = new LambdaQueryWrapper<>();
+        iq.eq(NevOrderItemDO::getOrderId, order.getId());
+        List<NevOrderItemDO> items = orderItemMapper.selectList(iq);
+
+        // 从 snapshot 中提取 batteryId（最稳）
+        for (NevOrderItemDO it : items) {
+            Long batteryId = asLong(parseSnapshot(it.getProductSnapshot()), "batteryId");
+            if (batteryId == null) {
+                continue;
+            }
+            // 从 nev_battery 拿 traceNumber 由 batteryService 在内部完成；这里我们查 product 拿
+            // 简化：直接从 productMapper 拿当前商品的 batteryId（如商品改过 batteryId 优先用快照）
+            // 这里取 snapshot.batteryId 即可；然后调链
+            String traceNumber = findTraceNumberByBatteryId(batteryId);
+            if (traceNumber == null) {
+                log.warn("[order] battery_id={} 找不到 trace_number，跳过链上 SOLD", batteryId);
+                continue;
+            }
+            log.info("[order] order#{} -> recordSoldByMerchant trace={} merchantUser={} consumer={}",
+                order.getId(), traceNumber, merchant.getUserId(), order.getUserId());
+            batteryService.recordSoldByMerchant(
+                traceNumber, merchant.getUserId(), merchantExt.getWalletAddress(),
+                order.getOrderNo(), order.getUserId()
+            );
+        }
+
+        return buildVo(order);
+    }
+
+    private String findTraceNumberByBatteryId(Long batteryId) {
+        // 在 nev_battery 表里查（用 nev-battery 模块的 mapper，跨模块的简单办法是再用 sql 注入）
+        // 这里用最简单方式：通过 BatteryService 暴露的入口反查。
+        // 实际我们已经把 batteryId 存到 product.battery_id，订单 snapshot 也存了 batteryId，
+        // 但 trace_number 是电池业务编号。需要从 nev_battery 表反查。
+        // 简化：直接执行原生 SQL（通过 productMapper 的 sqlSession？）
+        // 为了避免额外依赖，复用 jdbc：在 helper 里做。
+        // 这里通过 productMapper 拿不到 trace_number，需要 nev-battery 的 NevBatteryMapper。
+        // 但 nev-marketplace 已 depend on nev-battery，可以注入 NevBatteryMapper。
+        return traceNumberCache.computeIfAbsent(batteryId, this::lookupTraceNumber);
+    }
+
+    private final java.util.concurrent.ConcurrentHashMap<Long, String> traceNumberCache = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private String lookupTraceNumber(Long batteryId) {
+        // 用 BatteryService 没有暴露 trace 查询接口；这里直接走 nev_battery 表的 mapper
+        com.nev.battery.domain.NevBatteryDO b = nevBatteryMapper.selectById(batteryId);
+        return b == null ? null : b.getTraceNumber();
+    }
+
+    private final com.nev.battery.mapper.NevBatteryMapper nevBatteryMapper;
 
     // ----------------- helpers -----------------
 
@@ -299,6 +443,12 @@ public class OrderService {
         String ts = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         int rnd = ThreadLocalRandom.current().nextInt(100000, 999999);
         return "ORD" + ts + rnd;
+    }
+
+    private String generatePaymentNo() {
+        String ts = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        int rnd = ThreadLocalRandom.current().nextInt(100000, 999999);
+        return "PAY" + ts + rnd;
     }
 
     private String productSnapshot(NevProductDO p) {

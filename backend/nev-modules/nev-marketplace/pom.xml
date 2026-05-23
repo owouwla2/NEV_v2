@@ -19,6 +19,13 @@
     </description>
 
     <dependencies>
+        <!-- 调 BatteryService.recordSoldByMerchant 触发链上 SOLD 事件 -->
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>nev-battery</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
         <dependency>
             <groupId>com.nev</groupId>
             <artifactId>ruoyi-common-core</artifactId>

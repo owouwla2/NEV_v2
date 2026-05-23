@@ -60,4 +60,16 @@ public class ConsumerOrderController {
         orderService.cancel(orderId, reason);
         return R.ok();
     }
+
+    @SaCheckLogin @SaCheckRole("consumer")
+    @PostMapping("/pay/{orderId}")
+    public R<OrderVO> pay(@PathVariable Long orderId) {
+        return R.ok(orderService.pay(orderId));
+    }
+
+    @SaCheckLogin @SaCheckRole("consumer")
+    @PostMapping("/confirm/{orderId}")
+    public R<OrderVO> confirm(@PathVariable Long orderId) {
+        return R.ok(orderService.confirm(orderId));
+    }
 }
