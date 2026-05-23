@@ -27,8 +27,7 @@
 
 | 用户 | 位置 | 备注 |
 |---|---|---|
-| admin1 | `contracts/pk/admin1_key_*.p12`（已 gitignore）+ 已导入 WeBASE-Front 5002 本地 | 空密码，后端用 `/trans/handle` 调用 |
-| 其余 6 个 | 仅在 WeBASE-Web 5000/NodeManager 数据库 | 暂未导入 Front；D12 需要 producer1 等签名时再导出导入 |
+| admin1 + 6 demo 用户 | `contracts/pk/<name>_key_*.p12`（已 gitignore）+ 已通过 `POST /privateKey/importP12` 全部导入 **WeBASE-Front 5002 本地私钥库** | 空密码，后端用 `/trans/handle` 调用，user 字段传 wallet address |
 
 ## 链上授权记录
 
