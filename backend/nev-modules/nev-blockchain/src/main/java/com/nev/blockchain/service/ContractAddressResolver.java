@@ -68,17 +68,18 @@ public class ContractAddressResolver {
     }
 
     /**
-     * 获取合约调用对应的签名用户 ID（合约级覆盖 > 全局默认）
+     * 获取合约调用者钱包地址（合约级覆盖 > 全局默认）
+     * 用于 /trans/handle 接口的 user 字段
      */
-    public String resolveSignUserId(String contractName) {
+    public String resolveUserAddress(String contractName) {
         ContractEntry entry = requireEntry(contractName);
-        String userId = StringUtils.hasText(entry.getSignUserId())
-            ? entry.getSignUserId()
-            : properties.getDefaultSignUserId();
-        if (!StringUtils.hasText(userId)) {
-            throw new ServiceException("合约 [{}] 没有签名用户，且未配置 nev.blockchain.defaultSignUserId", contractName);
+        String addr = StringUtils.hasText(entry.getUserAddress())
+            ? entry.getUserAddress()
+            : properties.getDefaultUserAddress();
+        if (!StringUtils.hasText(addr)) {
+            throw new ServiceException("合约 [{}] 没有调用者地址，且未配置 nev.blockchain.defaultUserAddress", contractName);
         }
-        return userId;
+        return addr;
     }
 
     /**

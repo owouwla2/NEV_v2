@@ -62,7 +62,7 @@ public class ContractInvoker {
 
     /**
      * 写链调用（onlyXxx 修饰符的函数：registerBattery / addEvent / grantRole 等）
-     * 走 /WeBASE-Front/trans/handleWithSign，WeBASE-Sign 自动签名
+     * 走 /WeBASE-Front/trans/handle，user 字段传 Front 本地私钥库中已有的 wallet address
      *
      * @param contractName 合约名（必须已在 ContractAddressResolver 中注册 ABI + 配置地址）
      * @param funcName     合约方法名
@@ -70,18 +70,16 @@ public class ContractInvoker {
      */
     public ChainCallResult invoke(String contractName, String funcName, List<Object> funcParams) {
         Map<String, Object> body = buildBaseBody(contractName, funcName, funcParams);
-        String url = "/WeBASE-Front/trans/handleWithSign";
-        return doRequest(url, body, true);
+        return doRequest("/WeBASE-Front/trans/handle", body, true);
     }
 
     /**
      * 读链调用（view / pure 函数：verifyBattery / hasRole / getEvent 等）
-     * 走 /WeBASE-Front/trans/query-transaction，不消耗 gas，无 txHash
+     * 同样走 /WeBASE-Front/trans/handle —— WeBASE-Front 内部根据 ABI 自动判断 view 函数不上链不消耗 gas
      */
     public ChainCallResult query(String contractName, String funcName, List<Object> funcParams) {
         Map<String, Object> body = buildBaseBody(contractName, funcName, funcParams);
-        String url = "/WeBASE-Front/trans/query-transaction";
-        return doRequest(url, body, false);
+        return doRequest("/WeBASE-Front/trans/handle", body, false);
     }
 
     // ---------------------------------------------------------------
@@ -89,14 +87,14 @@ public class ContractInvoker {
     private Map<String, Object> buildBaseBody(String contractName, String funcName, List<Object> funcParams) {
         String address = addressResolver.resolveAddress(contractName);
         String abiJson = addressResolver.resolveAbi(contractName);
-        String signUserId = addressResolver.resolveSignUserId(contractName);
+        String userAddress = addressResolver.resolveUserAddress(contractName);
         String contractPath = addressResolver.resolvePath(contractName);
 
         List<Map<String, Object>> abiList = parseAbi(abiJson);
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("groupId", properties.getGroupId());
-        body.put("signUserId", signUserId);
+        body.put("user", userAddress);
         body.put("contractName", contractName);
         body.put("contractPath", contractPath);
         body.put("version", "");

@@ -280,16 +280,18 @@ justauth:
 
 
 # ============================================================
-# NEV-v2 区块链配置（Wave 2 D10 引入；D11 部署后填 address + signUserId）
+# NEV-v2 区块链配置（Wave 2 D10 引入；D11 部署后回填真实地址）
 # ============================================================
 nev:
   blockchain:
     webaseFrontUrl: http://localhost:5002
     groupId: 1
-    defaultSignUserId: nev_admin  # D11 通过 WeBASE-Sign 创建实际用户后更新
+    # Front 5002 本地私钥库的 admin1 钱包地址（合约 ADMIN，通过 .p12 importP12 已导入）
+    defaultUserAddress: '0x6933f6d76d71b7ca66f70f3faf6b108a10697aa2'
     timeout: 30000
     contracts:
       LifecycleTrace:
-        address: '0x0000000000000000000000000000000000000000'  # D11 部署后回填
+        address: '0xf71701365b8b35d4a03a12ecc51edf5fd5797b08'
         path: /
-        # signUserId 留空则用 defaultSignUserId
+        # userAddress 留空则用 defaultUserAddress (admin1)
+        # 业务侧切换调用者时（如 producer1 调 registerBattery），由 Service 运行时 override

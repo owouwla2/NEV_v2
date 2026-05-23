@@ -58,6 +58,13 @@ build/
 # D11 deployment source). Whitelist them out of the generic build/ rule above.
 !contracts/build/
 !contracts/build/**
+
+# Private keys / wallet files MUST NEVER be committed
+contracts/pk/
+contracts/keys/
+*.p12
+*.pem
+!contracts/build/**/*.pem
 .nuxt/
 *.local
 
