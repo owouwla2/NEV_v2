@@ -253,6 +253,40 @@ public class BatteryService {
         );
     }
 
+    /**
+     * 以旧换新场景：consumer accept 后 system 用 recycler 钱包代签触发链上 RECYCLED
+     * @param traceNumber 老电池业务编号
+     * @param recyclerUserId 接收回收的回收商用户ID
+     * @param recyclerWalletAddress 回收商钱包地址（Front 本地私钥库已导入）
+     * @param soh 评估的 State of Health（0-100）
+     * @param requestNo 以旧换新申请单号（计入 payload，便于审计）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public BatteryEventVO recordRecycledByTradeIn(
+        String traceNumber, Long recyclerUserId, String recyclerWalletAddress,
+        Integer soh, String requestNo
+    ) {
+        if (!StringUtils.hasText(traceNumber) || recyclerUserId == null
+            || !StringUtils.hasText(recyclerWalletAddress)) {
+            throw new ServiceException("recordRecycledByTradeIn 参数不全");
+        }
+        OperatorContext op = new OperatorContext(recyclerUserId, recyclerWalletAddress, "recycler");
+        Integer soundSoh = soh == null ? 0 : soh;
+        return appendEvent(
+            "RECYCLED", EVT_RECYCLED, op, traceNumber,
+            (now) -> DataHashCalculator.recycled(
+                traceNumber, recyclerUserId, soundSoh, toLdt(now)),
+            (now) -> serializePayload(Map.of(
+                "recyclerId", recyclerUserId,
+                "soh",        soundSoh,
+                "receivedAt", toLdt(now).toString(),
+                "via",        "trade-in",
+                "requestNo",  requestNo == null ? "" : requestNo
+            )),
+            "recycler"
+        );
+    }
+
     // ==========================================================================
     // Helpers
     // ==========================================================================
