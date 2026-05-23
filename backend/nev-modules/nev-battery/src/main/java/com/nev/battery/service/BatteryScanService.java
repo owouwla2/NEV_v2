@@ -39,6 +39,8 @@ public class BatteryScanService {
     private final NevBatteryLifecycleMapper lifecycleMapper;
     private final ContractInvoker contractInvoker;
     private final ObjectMapper objectMapper;
+    /** 碳足迹扩展点：nev-carbon 实现 CarbonScanEnricher 后自动注入；未启用碳模块时为 empty */
+    private final org.springframework.beans.factory.ObjectProvider<com.nev.battery.api.CarbonScanEnricher> carbonEnricherProvider;
 
     public BatteryScanVO scan(String traceNumber) {
         if (traceNumber == null || traceNumber.isBlank()) {
@@ -85,6 +87,13 @@ public class BatteryScanService {
         boolean overallOk = (verified == lcList.size())
             && (chainEventCount == null || chainEventCount == lcList.size());
 
+        // 碳足迹（如果 nev-carbon 模块加载且电池已计算）
+        com.nev.battery.api.CarbonSummary carbon = null;
+        com.nev.battery.api.CarbonScanEnricher enricher = carbonEnricherProvider.getIfAvailable();
+        if (enricher != null) {
+            carbon = enricher.getSummary(battery.getId()).orElse(null);
+        }
+
         return BatteryScanVO.builder()
             .traceNumber(battery.getTraceNumber())
             .model(battery.getModel())
@@ -98,6 +107,7 @@ public class BatteryScanService {
             .verifiedEvents(verified)
             .chainEventCount(chainEventCount)
             .events(items)
+            .carbonFootprint(carbon)
             .build();
     }
 

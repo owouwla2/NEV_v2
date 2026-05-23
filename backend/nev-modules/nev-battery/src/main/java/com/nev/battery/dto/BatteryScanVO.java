@@ -44,6 +44,9 @@ public class BatteryScanVO implements Serializable {
     // ---- 事件时间线 ----
     private List<EventItem> events;
 
+    // ---- 碳足迹摘要（nev-carbon 未加载时为 null）----
+    private com.nev.battery.api.CarbonSummary carbonFootprint;
+
     @Data
     @Builder
     public static class EventItem implements Serializable {

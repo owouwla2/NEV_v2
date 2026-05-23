@@ -63,6 +63,7 @@ public class OrderService {
     private final NevPaymentRecordMapper paymentMapper;
     private final SysNevUserExtMapper userExtMapper;
     private final BatteryService batteryService;
+    private final com.nev.carbon.service.CarbonCreditService carbonCreditService;
     private final ObjectMapper objectMapper;
 
     /** 从购物车选项创建订单（同一订单必须来自同一商家） */
@@ -328,6 +329,19 @@ public class OrderService {
                 traceNumber, merchant.getUserId(), merchantExt.getWalletAddress(),
                 order.getOrderNo(), order.getUserId()
             );
+            // 给 consumer 发碳积分（按电池碳足迹 EOL 减排量）
+            try {
+                java.math.BigDecimal credit = carbonCreditService.awardFromOrder(
+                    order.getUserId(), batteryId, order.getId());
+                if (credit.signum() > 0) {
+                    log.info("[order] order#{} -> consumer#{} +{} kgCO2eq 碳积分",
+                        order.getId(), order.getUserId(), credit);
+                }
+            } catch (Exception ex) {
+                log.error("[order] 碳积分发放失败 order#{} battery#{} err={}",
+                    order.getId(), batteryId, ex.getMessage());
+                // 积分发放失败不回滚订单（订单已完成 + 链上 SOLD 已写入），但记录日志
+            }
         }
 
         return buildVo(order);

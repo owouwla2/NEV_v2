@@ -26,6 +26,13 @@
             <version>${revision}</version>
         </dependency>
 
+        <!-- 订单完成时给 consumer 发碳积分 -->
+        <dependency>
+            <groupId>com.nev</groupId>
+            <artifactId>nev-carbon</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
         <dependency>
             <groupId>com.nev</groupId>
             <artifactId>ruoyi-common-core</artifactId>
