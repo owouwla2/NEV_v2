@@ -172,6 +172,10 @@ public class ContractInvoker {
             // 4. output（query 返回数据）
             if (!writeCall) {
                 JsonNode out = firstNode(root, "output", "data", "result");
+                // WeBASE /trans/handle 的 view 函数直接返回 ["xxx"] 数组作为根节点，没有外层包装
+                if (out == null && root.isArray()) {
+                    out = root;
+                }
                 builder.output(out == null ? null : objectMapper.convertValue(out, Object.class));
             }
         } catch (Exception e) {
@@ -190,6 +194,10 @@ public class ContractInvoker {
         JsonNode statusOk = root.get("statusOK");
         if (statusOk != null && statusOk.isBoolean()) {
             return statusOk.asBoolean();
+        }
+        // WeBASE /trans/handle 对 view 函数直接返回 JSON 数组（如 ["true"] / ["4"]），即视为成功
+        if (root.isArray()) {
+            return true;
         }
         return !root.has("error");
     }
