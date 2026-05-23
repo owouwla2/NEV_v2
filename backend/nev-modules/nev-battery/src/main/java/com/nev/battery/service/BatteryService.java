@@ -6,8 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nev.battery.domain.NevBatteryDO;
 import com.nev.battery.domain.NevBatteryLifecycleDO;
 import com.nev.battery.domain.SysNevUserExtDO;
+import com.nev.battery.dto.BatteryEventVO;
 import com.nev.battery.dto.BatteryRegisterDTO;
 import com.nev.battery.dto.BatteryRegisterVO;
+import com.nev.battery.dto.ReceiveDTO;
+import com.nev.battery.dto.SellDTO;
+import com.nev.battery.dto.TransferInDTO;
 import com.nev.battery.mapper.NevBatteryLifecycleMapper;
 import com.nev.battery.mapper.NevBatteryMapper;
 import com.nev.battery.mapper.SysNevUserExtMapper;
@@ -28,11 +32,13 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
- * 电池业务服务
+ * 电池业务服务（producer 注册 + distributor/retailer/recycler 事件上报）
  *
- * 当前实现：注册（PRODUCED 事件），D13 起加 IN_USE/SOLD/RECYCLED 等
+ * 事件 EventType 与链上 enum 对齐：
+ *   PRODUCED=0 / IN_USE=1 / SOLD=2 / REPAIRED=3 / RECYCLED=4 / DISMANTLED=5
  *
  * @author NEV-v2
  */
@@ -43,38 +49,35 @@ public class BatteryService {
 
     private static final String CONTRACT_NAME = "LifecycleTrace";
 
+    private static final int EVT_PRODUCED   = 0;
+    private static final int EVT_IN_USE     = 1;
+    private static final int EVT_SOLD       = 2;
+    private static final int EVT_REPAIRED   = 3;
+    private static final int EVT_RECYCLED   = 4;
+    private static final int EVT_DISMANTLED = 5;
+
     private final NevBatteryMapper batteryMapper;
     private final NevBatteryLifecycleMapper lifecycleMapper;
     private final SysNevUserExtMapper userExtMapper;
     private final ContractInvoker contractInvoker;
     private final ObjectMapper objectMapper;
 
-    /**
-     * Producer 注册新电池：MySQL 落库 → keccak256 → 链上 registerBattery → 写 PRODUCED lifecycle
-     */
+    // ==========================================================================
+    // PRODUCED — Producer 注册新电池
+    // ==========================================================================
+
     @Transactional(rollbackFor = Exception.class)
     public BatteryRegisterVO register(BatteryRegisterDTO dto) {
-        // 0. 当前登录用户 = producer
-        Long producerId = LoginHelper.getUserId();
-        if (producerId == null) {
-            throw new ServiceException("未登录");
-        }
-        SysNevUserExtDO ext = userExtMapper.selectById(producerId);
-        if (ext == null || !StringUtils.hasText(ext.getWalletAddress())) {
-            throw new ServiceException("当前用户 [{}] 未绑定区块链钱包地址", producerId);
-        }
-        if (!"producer".equals(ext.getUserType())) {
-            throw new ServiceException("当前用户角色 [{}] 不是 producer，无权注册电池", ext.getUserType());
-        }
+        OperatorContext op = requireOperator("producer");
 
-        // 1. 校验 traceNumber 唯一
+        // 唯一性
         LambdaQueryWrapper<NevBatteryDO> exists = new LambdaQueryWrapper<>();
         exists.eq(NevBatteryDO::getTraceNumber, dto.getTraceNumber()).last("limit 1");
         if (batteryMapper.selectOne(exists) != null) {
             throw new ServiceException("溯源编号 [{}] 已存在", dto.getTraceNumber());
         }
 
-        // 2. 落库 nev_battery
+        // 落 nev_battery
         Date now = new Date();
         NevBatteryDO entity = new NevBatteryDO();
         entity.setTraceNumber(dto.getTraceNumber());
@@ -82,8 +85,8 @@ public class BatteryService {
         entity.setSerialNo(dto.getSerialNo());
         entity.setCapacityKwh(dto.getCapacityKwh());
         entity.setVoltage(dto.getVoltage());
-        entity.setProducerId(producerId);
-        entity.setCurrentOwnerId(producerId);
+        entity.setProducerId(op.userId());
+        entity.setCurrentOwnerId(op.userId());
         entity.setCurrentRole("producer");
         entity.setCurrentStatus("PRODUCED");
         entity.setProducedAt(now);
@@ -91,16 +94,16 @@ public class BatteryService {
         entity.setDelFlag("0");
         batteryMapper.insert(entity);
 
-        // 3. 计算 dataHash（按 design.md §5 规约）
-        LocalDateTime producedAtLdt = LocalDateTime.ofInstant(now.toInstant(), ZoneId.systemDefault());
+        // dataHash
+        LocalDateTime producedAtLdt = toLdt(now);
         String specJson = canonicalSpec(dto);
         byte[] hashBytes = DataHashCalculator.produced(
-            dto.getTraceNumber(), producerId, producedAtLdt, specJson);
+            dto.getTraceNumber(), op.userId(), producedAtLdt, specJson);
         String dataHashHex = DataHashCalculator.toHex(hashBytes);
 
-        // 4. 调用链上 registerBattery
+        // 链上 registerBattery（写入 BatteryRegistry.batteries mapping + emit BatteryRegistered）
         ChainCallResult chain = contractInvoker.invokeAs(
-            ext.getWalletAddress(),
+            op.walletAddress(),
             CONTRACT_NAME,
             "registerBattery",
             List.of(dto.getTraceNumber(), dataHashHex)
@@ -111,33 +114,239 @@ public class BatteryService {
             throw new ServiceException("链上注册失败: " + chain.getMessage());
         }
 
-        // 5. 写 nev_battery_lifecycle（PRODUCED, version=1）
-        NevBatteryLifecycleDO lc = new NevBatteryLifecycleDO();
-        lc.setBatteryId(entity.getId());
-        lc.setEventType("PRODUCED");
-        lc.setOperatorId(producerId);
-        lc.setOperatorRole("producer");
-        lc.setDataHash(dataHashHex);
-        lc.setTxHash(chain.getTxHash());
-        lc.setBlockNumber(chain.getBlockNumber());
-        lc.setVersion(1);
-        lc.setPayload(specJson);
-        lc.setEventTime(now);
-        lc.setTenantId("000000");
-        lc.setDelFlag("0");
-        lifecycleMapper.insert(lc);
+        // 链上 addEvent(PRODUCED) —— 同步写入 LifecycleTrace.lifecycleEvents 数组
+        // 不然后续 IN_USE/SOLD/... 链上 version 与 backend version 错位（链上 v=1 对应 IN_USE 而非 PRODUCED）
+        ChainCallResult lcChain = contractInvoker.invokeAs(
+            op.walletAddress(),
+            CONTRACT_NAME,
+            "addEvent",
+            List.of(dto.getTraceNumber(), EVT_PRODUCED, dataHashHex)
+        );
+        if (!lcChain.isSuccess()) {
+            log.error("[battery] 链上 addEvent(PRODUCED) 失败: trace={} msg={}",
+                dto.getTraceNumber(), lcChain.getMessage());
+            throw new ServiceException("链上 PRODUCED 事件写入失败: " + lcChain.getMessage());
+        }
+
+        // lifecycle PRODUCED v1（用 addEvent 的 txHash，更能代表链上 lifecycle 行）
+        insertLifecycle(entity.getId(), "PRODUCED", op, dataHashHex, lcChain, 1, specJson, now);
 
         return BatteryRegisterVO.builder()
             .id(entity.getId())
             .traceNumber(entity.getTraceNumber())
             .dataHash(dataHashHex)
-            .txHash(chain.getTxHash())
-            .blockNumber(chain.getBlockNumber())
+            .txHash(lcChain.getTxHash())
+            .blockNumber(lcChain.getBlockNumber())
             .version(1)
             .producedAt(now)
             .chainStatus("SUCCESS")
             .message("注册成功")
             .build();
+    }
+
+    // ==========================================================================
+    // IN_USE — Distributor 接收电池
+    // ==========================================================================
+
+    @Transactional(rollbackFor = Exception.class)
+    public BatteryEventVO transferIn(TransferInDTO dto) {
+        OperatorContext op = requireOperator("distributor");
+        return appendEvent(
+            "IN_USE", EVT_IN_USE, op, dto.getTraceNumber(),
+            (now) -> DataHashCalculator.inUse(
+                dto.getTraceNumber(), dto.getFromOwnerId(), op.userId(), toLdt(now)),
+            (now) -> serializePayload(Map.of(
+                "fromOwnerId", dto.getFromOwnerId(),
+                "toOwnerId",   op.userId(),
+                "handoverAt",  toLdt(now).toString(),
+                "remark",      dto.getRemark() == null ? "" : dto.getRemark()
+            )),
+            "distributor"
+        );
+    }
+
+    // ==========================================================================
+    // SOLD — Retailer 售出
+    // ==========================================================================
+
+    @Transactional(rollbackFor = Exception.class)
+    public BatteryEventVO sell(SellDTO dto) {
+        OperatorContext op = requireOperator("retailer");
+        // 校验 consumer 存在且角色匹配
+        SysNevUserExtDO consumer = userExtMapper.selectById(dto.getConsumerId());
+        if (consumer == null || !"consumer".equals(consumer.getUserType())) {
+            throw new ServiceException("consumer_id [{}] 不存在或角色不是 consumer", dto.getConsumerId());
+        }
+        return appendEvent(
+            "SOLD", EVT_SOLD, op, dto.getTraceNumber(),
+            (now) -> DataHashCalculator.sold(
+                dto.getTraceNumber(), dto.getOrderNo(), dto.getConsumerId(), toLdt(now)),
+            (now) -> serializePayload(Map.of(
+                "orderNo",    dto.getOrderNo(),
+                "consumerId", dto.getConsumerId(),
+                "soldAt",     toLdt(now).toString(),
+                "remark",     dto.getRemark() == null ? "" : dto.getRemark()
+            )),
+            // SOLD 后所有权转给 consumer
+            "consumer",
+            dto.getConsumerId()
+        );
+    }
+
+    // ==========================================================================
+    // RECYCLED — Recycler 接收回收
+    // ==========================================================================
+
+    @Transactional(rollbackFor = Exception.class)
+    public BatteryEventVO receive(ReceiveDTO dto) {
+        OperatorContext op = requireOperator("recycler");
+        return appendEvent(
+            "RECYCLED", EVT_RECYCLED, op, dto.getTraceNumber(),
+            (now) -> DataHashCalculator.recycled(
+                dto.getTraceNumber(), op.userId(), dto.getSoh(), toLdt(now)),
+            (now) -> serializePayload(Map.of(
+                "recyclerId", op.userId(),
+                "soh",        dto.getSoh(),
+                "receivedAt", toLdt(now).toString(),
+                "remark",     dto.getRemark() == null ? "" : dto.getRemark()
+            )),
+            "recycler"
+        );
+    }
+
+    // ==========================================================================
+    // Helpers
+    // ==========================================================================
+
+    /** 通用事件追加：电池存在性 → 计算 hash → 链上 addEvent → 写 lifecycle + 更新 nev_battery */
+    private BatteryEventVO appendEvent(
+        String eventType,
+        int chainEventTypeInt,
+        OperatorContext op,
+        String traceNumber,
+        Function<Date, byte[]> hashFn,
+        Function<Date, String> payloadFn,
+        String newCurrentRole
+    ) {
+        return appendEvent(eventType, chainEventTypeInt, op, traceNumber, hashFn, payloadFn, newCurrentRole, op.userId());
+    }
+
+    private BatteryEventVO appendEvent(
+        String eventType,
+        int chainEventTypeInt,
+        OperatorContext op,
+        String traceNumber,
+        Function<Date, byte[]> hashFn,
+        Function<Date, String> payloadFn,
+        String newCurrentRole,
+        Long newCurrentOwnerId
+    ) {
+        // 1. 校验电池存在
+        NevBatteryDO battery = findBattery(traceNumber);
+        if ("DISMANTLED".equals(battery.getCurrentStatus())) {
+            throw new ServiceException("电池 [{}] 已报废拆解，不能继续操作", traceNumber);
+        }
+
+        Date now = new Date();
+
+        // 2. 计算 dataHash
+        byte[] hashBytes = hashFn.apply(now);
+        String dataHashHex = DataHashCalculator.toHex(hashBytes);
+        String payload = payloadFn.apply(now);
+
+        // 3. 链上 addEvent
+        ChainCallResult chain = contractInvoker.invokeAs(
+            op.walletAddress(),
+            CONTRACT_NAME,
+            "addEvent",
+            List.of(traceNumber, chainEventTypeInt, dataHashHex)
+        );
+        if (!chain.isSuccess()) {
+            log.error("[battery] 链上 addEvent({}) 失败: trace={} msg={}",
+                eventType, traceNumber, chain.getMessage());
+            throw new ServiceException("链上 {} 失败: {}", eventType, chain.getMessage());
+        }
+
+        // 4. 计算 version（按 battery_id 单调递增）
+        LambdaQueryWrapper<NevBatteryLifecycleDO> maxQ = new LambdaQueryWrapper<>();
+        maxQ.eq(NevBatteryLifecycleDO::getBatteryId, battery.getId())
+            .orderByDesc(NevBatteryLifecycleDO::getVersion).last("limit 1");
+        NevBatteryLifecycleDO latest = lifecycleMapper.selectOne(maxQ);
+        int nextVersion = (latest == null ? 0 : latest.getVersion()) + 1;
+
+        // 5. 写 lifecycle
+        insertLifecycle(battery.getId(), eventType, op, dataHashHex, chain, nextVersion, payload, now);
+
+        // 6. 更新 nev_battery 当前状态 + 持有者
+        battery.setCurrentStatus(eventType);
+        battery.setCurrentRole(newCurrentRole);
+        battery.setCurrentOwnerId(newCurrentOwnerId);
+        batteryMapper.updateById(battery);
+
+        return BatteryEventVO.builder()
+            .batteryId(battery.getId())
+            .traceNumber(traceNumber)
+            .eventType(eventType)
+            .version(nextVersion)
+            .dataHash(dataHashHex)
+            .txHash(chain.getTxHash())
+            .blockNumber(chain.getBlockNumber())
+            .eventTime(now)
+            .currentStatus(eventType)
+            .currentOwnerId(newCurrentOwnerId)
+            .currentRole(newCurrentRole)
+            .chainStatus("SUCCESS")
+            .message(eventType + " 事件已上报")
+            .build();
+    }
+
+    private NevBatteryDO findBattery(String traceNumber) {
+        LambdaQueryWrapper<NevBatteryDO> q = new LambdaQueryWrapper<>();
+        q.eq(NevBatteryDO::getTraceNumber, traceNumber).last("limit 1");
+        NevBatteryDO b = batteryMapper.selectOne(q);
+        if (b == null) {
+            throw new ServiceException("溯源编号 [{}] 不存在", traceNumber);
+        }
+        return b;
+    }
+
+    private OperatorContext requireOperator(String requiredRole) {
+        Long uid = LoginHelper.getUserId();
+        if (uid == null) {
+            throw new ServiceException("未登录");
+        }
+        SysNevUserExtDO ext = userExtMapper.selectById(uid);
+        if (ext == null || !StringUtils.hasText(ext.getWalletAddress())) {
+            throw new ServiceException("当前用户 [{}] 未绑定区块链钱包地址", uid);
+        }
+        if (!requiredRole.equals(ext.getUserType())) {
+            throw new ServiceException("当前用户角色 [{}] 不是 {}，无权操作",
+                ext.getUserType(), requiredRole);
+        }
+        return new OperatorContext(uid, ext.getWalletAddress(), ext.getUserType());
+    }
+
+    private void insertLifecycle(Long batteryId, String eventType, OperatorContext op,
+                                 String dataHashHex, ChainCallResult chain,
+                                 int version, String payload, Date eventTime) {
+        NevBatteryLifecycleDO lc = new NevBatteryLifecycleDO();
+        lc.setBatteryId(batteryId);
+        lc.setEventType(eventType);
+        lc.setOperatorId(op.userId());
+        lc.setOperatorRole(op.role());
+        lc.setDataHash(dataHashHex);
+        lc.setTxHash(chain.getTxHash());
+        lc.setBlockNumber(chain.getBlockNumber());
+        lc.setVersion(version);
+        lc.setPayload(payload);
+        lc.setEventTime(eventTime);
+        lc.setTenantId("000000");
+        lc.setDelFlag("0");
+        lifecycleMapper.insert(lc);
+    }
+
+    private LocalDateTime toLdt(Date date) {
+        return LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
     }
 
     private String canonicalSpec(BatteryRegisterDTO dto) {
@@ -149,10 +358,18 @@ public class BatteryService {
         spec.put("cellSupplier", dto.getCellSupplier());
         spec.put("cellType", dto.getCellType());
         spec.put("bmsInfo", dto.getBmsInfo());
+        return serializePayload(spec);
+    }
+
+    private String serializePayload(Map<String, Object> payload) {
         try {
-            return objectMapper.writeValueAsString(spec);
+            return objectMapper.writeValueAsString(payload);
         } catch (JsonProcessingException e) {
-            throw new ServiceException("电池规格序列化失败: " + e.getMessage());
+            throw new ServiceException("payload 序列化失败: " + e.getMessage());
         }
+    }
+
+    /** 当前操作者上下文 */
+    private record OperatorContext(Long userId, String walletAddress, String role) {
     }
 }
