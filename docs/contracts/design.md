@@ -199,3 +199,58 @@ public class DataHashCalculator {
 - **D11**：通过 WeBASE-Front HTTP API 部署到 FISCO BCOS group 1，回写 `nev_contract_config(contract_name='LifecycleTrace', contract_address='0x...', abi=...)`
   - 部署后，把 6 个 demo 用户的占位 wallet_address (`0x101..0101~0106`) 换成真实 FISCO BCOS account（通过 WeBASE-Sign 服务生成）
   - 然后用 ADMIN account 调用 `grantRole(producer1_addr, PRODUCER)` 等 6 次完成链上授权
+
+---
+
+## 9. 实际部署落地（Wave 2 D11 完成，2026-05-22）
+
+> 本节是回写记录，不再是预告。文档前文 §4 / §5 的"web3j Hash.sha3 + webase-app-sdk" 在落地阶段调整为下面的实际实现，逻辑等价。
+
+### 9.1 部署结果
+
+| 项 | 值 |
+|---|---|
+| 部署链 | FISCO BCOS `group_1`（4 节点 PBFT，沿用老仓集群） |
+| 入口 | WeBASE-Web 5000 → WeBASE-Front 5002 |
+| 编译器 | `solc 0.6.10`（通过 WeBASE-Front 内置 solc-js） |
+| 编译产物 | `contracts/build/LifecycleTrace.bin`（14.7 KB） + `LifecycleTrace.abi`（6.7 KB，18 个函数） |
+| 部署地址 | `0xf71701365b8b35d4a03a12ecc51edf5fd5797b08` |
+| 部署人 | `admin1` 钱包 `0x6933f6d76d71b7ca66f70f3faf6b108a10697aa2`（链上 Role=1 ADMIN） |
+| 部署回执 | 已写入 `nev_contract_config` 表，由 `ContractRegistryBootstrap` 在 Spring 启动时加载到 `contractAddress` Bean |
+
+完整地址清单见 `contracts/address/address.md`。
+
+### 9.2 7 钱包角色映射（已 `grantRole` 上链）
+
+| 用户名 | 钱包 | 链上 Role | sys_user.user_id |
+|---|---|---:|---:|
+| `admin1` | `0x6933...7aa2` | 1 (ADMIN) | — |
+| `producer1` | `0x501d...5d8c` | 2 (PRODUCER) | 101 |
+| `distrib1` | `0x133d...294d` | 3 (DISTRIBUTOR) | 102 |
+| `retailer1` | `0x7a02...c0ce` | 4 (RETAILER) | 103 |
+| `merchant1` | `0x4cae...510f` | 5 (MERCHANT) | 104 |
+| `consumer1` | `0x8385...c623` | 6 (CONSUMER) | 105 |
+| `recycler1` | `0xe3ca...5eb9` | 7 (RECYCLER) | 106 |
+
+### 9.3 落地与设计的差异
+
+| 维度 | 设计章节预设 | 实际实现 | 调整原因 |
+|---|---|---|---|
+| **Hash 库** | `web3j Hash.sha3()` | `BouncyCastle Keccak.Digest256`（bcpkix-jdk18on） | web3j 0.6.10 plugin 与 RuoYi-Plus 5.6.1 的 Spring Boot 3.5 / JDK 21 出现 BOM 冲突；改用 BouncyCastle 直接做 keccak256，输出等价 |
+| **调用 SDK** | `webase-app-sdk 1.5.5` | 自建 `ContractInvoker`：`POST /trans/handle`（Front 本地签名），`user` 字段传钱包地址 | webase-app-sdk 走 `/trans/handleWithSign` 需 WeBASE-Sign 5004 维护用户列表，实测 5004 用户列表与 5000 不同步；直接走 Front `/trans/handle` 简化链路 |
+| **私钥保管** | Sign 服务远程签名 | 7 个 p12 通过 `POST /privateKey/importP12` 导入 WeBASE-Front **本地私钥库**（空密码） | 同上原因；p12 文件存 `contracts/pk/`（已 gitignore） |
+| **registerBattery 上链事件** | 自动在合约内 push 一条 PRODUCED | Solidity 合约里没 push；改由 Java 侧 `BatteryService.register()` 在 `registerBattery` 成功后**显式追加 `addEvent(PRODUCED, hash)`** | Wave 2 D12 测试时发现链上事件计数与 MySQL 不一致，定位为合约级未自动 push；改 Java 侧补一次调用，最少改动且向后兼容 |
+| **`verifyEvent` 调用** | view 函数返回 bool | WeBASE Front 对 view 函数返回 **JSON 数组根**而非对象；`ContractInvoker.parseResponse` 须处理这种特殊格式 | 实测后修复 |
+
+### 9.4 端到端校验结果
+
+Wave 4 D28 用 curl 透过前端 proxy（`:8120 → :9280`）跑了两条并行链路，**全部 `verifyEvent=true` 且 `overallVerified=true`**：
+
+| 链路 | 事件序列 | 校验结果 |
+|---|---|---|
+| 主链 | PRODUCED → IN_USE × 2 → RECYCLED | 4 事件全部链上链下一致 |
+| 商城 | PRODUCED → IN_USE → SOLD | 3 事件全部链上链下一致 + 自动发碳积分 `+1062.5 kgCO2eq` |
+
+### 9.5 NatSpec 编译踩坑
+
+- 合约方法注释里的 `@SaCheckRole("admin")` 被 solc 0.6.10 当成不识别的 NatSpec tag 拒绝编译；改成 `SaCheckRole("admin")`（去掉 `@`）即可

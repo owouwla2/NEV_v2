@@ -19,7 +19,7 @@
 | 碳计算公式 | `NEV/backend/src/main/java/nev/service/CarbonCalculationService.java` | GHG / GB-T 24067 全生命周期碳足迹核算公式（直接照搬） |
 | 订单状态机 | `NEV/backend/src/main/java/nev/service/OrderService.java` | PENDING→PAID→SHIPPED→DELIVERED→COMPLETED 状态转移逻辑 |
 | 区块链调用封装 | `NEV/backend/src/main/java/nev/contract/TraceContract.java` | WeBASE-Front HTTP 调用封装思路 |
-| 用户端 H5 | `NEV/apps/user-app-v2/` | uni-app 13 页面，Wave 4 复制到新仓 `apps/user-app/` |
+| ~~用户端 H5~~ | ~~`NEV/apps/user-app-v2/`~~ | **Wave 4 决策：放弃复制**。改由 admin-web 顶部按 `consumer` 角色显示购物车快捷入口 + 独立公开扫码页 `/scan/:trace` 替代 |
 | WeBASE 部署 | `NEV/webase-deploy/` `NEV/WeBASE/` `NEV/docker/` | FISCO BCOS 部署脚本和 Docker compose（Wave 2 沿用） |
 | Demo seed JSON | `NEV/backend/src/test/resources/demo/mall-demo.seed.json` | 24 用户/8 商家/72 商品/40 订单（参考字段值，Wave 1 转换为 SQL） |
 
@@ -77,16 +77,23 @@
 
 ---
 
-## 4. plus-ui 官方仓库（前端脚手架）
+## 4. ~~plus-ui~~ → shadcn-vue（前端方案变更）
 
-**位置**：`https://github.com/javalionli/plus-ui`（远程，需 git clone）
+**Wave 4 D22 关键决策（2026-05-24）**：原计划基于 `javalionli/plus-ui`（Element Plus）改造，实测后发现 plus-ui 与 RuoYi-Vue-Plus 5.6.1 配套度差、强行接入会引入大量适配工作；改为 **shadcn-vue 从零搭建**，并把工期顺延 +4 天（D22-D30 → D22-D34）。
 
-**版本**：默认主分支
+**实际方案**：
 
-**关键参考点**：
-- Wave 4 D22 克隆到 `NEV-v2/apps/admin-web/`
-- 改 `vite.config.ts` 的 baseURL → `http://localhost:9280`
-- 自带菜单/角色/字典/部门管理界面
+| 项 | 选择 | 备注 |
+|---|---|---|
+| 基础组件 | `shadcn-vue`（New York 风格 / zinc 灰阶） | CLI `pnpm dlx shadcn-vue@latest add <component>` 按需生成 |
+| 底层 | Reka UI | shadcn-vue 的 headless 底层 |
+| 样式 | Tailwind CSS 4 | |
+| 图标 | `lucide-vue-next` | shadcn-vue CLI 默认生成 `@lucide/vue` 错误导入名，须手动 `sed` 替换 |
+| 菜单/角色/字典/部门 | **自建 + 复用 RuoYi 服务端路由** | 用 `import.meta.glob('@/views/**/*.vue')` 动态注册 |
+
+**为什么不沿用 RuoYi-Vue-Plus 自带前端**：原版用 Element Plus + 老布局，比赛+毕设场景需要更符合 shadcn 设计语言的现代界面。
+
+**`Wave 4 设计源`**：`HANDOFF.md §5.8 + §7.3`
 
 ---
 
