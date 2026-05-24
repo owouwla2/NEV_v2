@@ -232,12 +232,19 @@ mvn -pl ruoyi-admin -am install -DskipTests
 # 进 ruoyi-admin 子目录启动（spring-boot-maven-plugin 只在子模块声明）
 cd ruoyi-admin
 mvn spring-boot:run
-# 日志出现 "Started RuoYiApplication" 即就绪，监听 :9280
+# 日志出现 "Started NevApplication" 即就绪，监听 :9280
 ```
 
-> 不能在 `backend/` 根目录直接 `mvn -pl ruoyi-admin -am spring-boot:run` — root pom 没声明 `spring-boot-maven-plugin`，Maven 找不到 `spring-boot:` 这个前缀。
->
-> IDE 启动（推荐）：IDEA 打开 `backend/`，找 `ruoyi-admin/src/main/java/.../NevApplication.java`，点绿色三角，断点 + 热重载都可用。
+> **PowerShell 跑会中文乱码**：因为 PS 默认 GBK (936) 控制台 vs Spring Boot UTF-8 日志。启动前先切 UTF-8 代码页：
+> ```powershell
+> chcp 65001
+> mvn spring-boot:run
+> ```
+> 永久解决：把 `chcp 65001 | Out-Null` 写进 `$PROFILE`。
+
+> **端口 9280 已被占用**：上一次 `mvn spring-boot:run` 用 Ctrl+C 不会杀掉 forked Java 子进程，会一直占着 9280。先 `netstat -ano | findstr :9280` 拿 PID，再 `taskkill /F /PID <pid>` 强杀。
+
+> **绕过 Maven 命令**（推荐 IDE 启动）：IDEA 打开 `backend/`，找 `ruoyi-admin/src/main/java/.../NevApplication.java`，点绿色三角，断点 + 热重载都可用、且无乱码。
 
 ### 3. 启动前端
 
