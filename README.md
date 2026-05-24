@@ -275,11 +275,18 @@ pnpm dev
 
 ## 设计文档
 
-- **需求文档**：`docs/requirements/2026-05-14-requirement-analysis-greenfield-rebuild-new-repo-nev-v2-ruoyi-vu.md`
-- **执行计划**：`docs/plans/2026-05-14-execution-plan-xl-wave-nev-v2-ruoyi-vue-plus-mysql-sa-token-myba-execution-plan.md`
-- **交接文档**：`HANDOFF.md`（跨对话上下文压缩，**对接维护者必读**）
-- **合约地址**：`contracts/address/address.md`
-- **参考项目索引**：`docs/reference/README.md`
+按你的角色找入口：
+
+| 你是 | 入口 | 内容 |
+|---|---|---|
+| 新人维护者 | [HANDOFF.md](HANDOFF.md) → [docs/architecture/README.md](docs/architecture/README.md) | 跨对话上下文 + 模块分层 + 链上链下双写校验 + 5 角色 e2e 时序 |
+| 接口对接 | [docs/api/README.md](docs/api/README.md) | 9 大类端点索引 + dual-header 鉴权 + 公开扫码 schema + ID 序列化约定 |
+| 合约审查 | [docs/contracts/design.md](docs/contracts/design.md) | 3 层继承 + 6 EventType + keccak256 规约 + §9 Wave 2 D11 实际部署落地 |
+| 钱包地址查询 | [contracts/address/address.md](contracts/address/address.md) | 合约部署地址 + 7 角色钱包清单 |
+| 业务需求 | [docs/requirements/2026-05-14-...](docs/requirements/2026-05-14-requirement-analysis-greenfield-rebuild-new-repo-nev-v2-ruoyi-vu.md) | 冻结需求（vibe 治理产物） |
+| 工期 / 计划 | [docs/plans/2026-05-14-...](docs/plans/2026-05-14-execution-plan-xl-wave-nev-v2-ruoyi-vue-plus-mysql-sa-token-myba-execution-plan.md) | 4 Wave / 30 天 XL 执行计划（FROZEN） |
+| 参考项目 | [docs/reference/README.md](docs/reference/README.md) | 老仓 + 2026037462 + shadcn-vue 方案变更说明 |
+| 历史分析 | [docs/legacy/analysis/2026-05-13-...](docs/legacy/analysis/2026-05-13-nev-vs-2026037462-comparison.md) | 新老仓对比报告 |
 
 ---
 
