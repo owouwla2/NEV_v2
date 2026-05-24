@@ -108,6 +108,8 @@ export const useUserStore = defineStore(
       permissions.value = []
       routers.value = []
       localStorage.removeItem(STORAGE_TOKEN_KEY)
+      // 同时清持久化的 user store（不然刷新会从 localStorage 拿到旧 roles）
+      localStorage.removeItem('nev:user')
     }
 
     return {
