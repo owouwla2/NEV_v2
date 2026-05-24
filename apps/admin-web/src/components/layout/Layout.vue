@@ -14,11 +14,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import { Zap, LogOut, Home, User } from 'lucide-vue-next'
+import { Zap, LogOut, Home, User, ShoppingCart } from 'lucide-vue-next'
 import SidebarNavItem from './SidebarNavItem.vue'
 
 const userStore = useUserStore()
 const route = useRoute()
+
+const isConsumer = computed(() => userStore.roles.includes('consumer'))
 
 const userInitials = computed(() => {
   const n = userStore.nickName || userStore.userName || '?'
@@ -103,6 +105,9 @@ function logout() {
           <span v-if="breadcrumb.length === 0">首页</span>
         </div>
         <div class="flex items-center gap-3">
+          <Button v-if="isConsumer" variant="ghost" size="sm" @click="$router.push('/marketplace/cart')">
+            <ShoppingCart class="size-4" /> 购物车
+          </Button>
           <Badge v-for="r in userStore.roles" :key="r" variant="secondary" class="font-normal">{{ r }}</Badge>
           <DropdownMenu>
             <DropdownMenuTrigger as-child>
