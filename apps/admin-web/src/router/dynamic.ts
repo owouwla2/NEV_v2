@@ -26,9 +26,18 @@ function loadComponent(componentName: string | undefined): () => Promise<unknown
     // 顶级菜单的 Layout 占位，展平后不会真渲染
     return () => import('@/views/PlaceholderView.vue')
   }
-  // 兼容三种写法：'system/user/index'、'system/user'、'/system/user/index'
+  // 兼容多种写法：
+  //   'nev/battery/register/index'   ← D5 seed 写法（带 nev/ 前缀）
+  //   'battery/register/index'       ← 等价（不带前缀）
+  //   'battery/register'             ← 文件夹 + index.vue
+  //   '/battery/register/index'      ← 误带 / 前缀
   const normalized = componentName.replace(/^\/+/, '')
-  const candidates = [normalized, `${normalized}/index`]
+  const stripNev = normalized.replace(/^nev\//, '')
+  const candidates = new Set<string>()
+  candidates.add(normalized)
+  candidates.add(`${normalized}/index`)
+  candidates.add(stripNev)
+  candidates.add(`${stripNev}/index`)
   for (const c of candidates) {
     if (componentRegistry[c]) return componentRegistry[c]
   }
