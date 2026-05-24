@@ -4,8 +4,8 @@
 > 新对话框只需要让 Claude 先读完本文档，就能无损接上之前的所有进度、约定、踩过的坑。
 >
 > **创建日期**：2026-05-15
-> **最后更新**：2026-05-23
-> **当前进度**：Wave 3 D18 完成（nev-carbon 模块骨架 + 5 实体 + 5 Mapper，待 D19 算法实现）
+> **最后更新**：2026-05-24
+> **当前进度**：Wave 3 完成（tag `wave-3-end`），进入 Wave 4 D22（前端 shadcn-vue 从零搭，全角色界面，工期顺延至 D34）
 > **位置**：`E:/Study/IdeaProjects/NEV-v2/HANDOFF.md`
 
 ---
@@ -771,8 +771,8 @@ py -3 -m vgo_cli.main canonical-entry `
 - ✅ Demo seed 重新编写 SQL 灌入，不复用老仓 MongoDB JSON
 
 ### 5.5 工期
-- ✅ 1 个月内必须有可演示版本
-- ✅ **R1 应急砍范围预案**已授权：D27 末跑不通则砍 distributor/retailer/recycler 专属页面用 admin 代演
+- ✅ 1 个月内必须有可演示版本（已被 D24 决策推翻，见 §5.8）
+- ⚠️ **R1 应急砍范围预案**已授权但**用户在 Wave 4 D22 决策点选择不启用**：每个业务角色（producer/distributor/retailer/merchant/consumer/recycler）必须有专属界面
 
 ### 5.6 合约创新
 - ✅ 本轮**不加**合约创新点（多签 / 零知 / Merkle），毕设阶段再加
@@ -780,6 +780,15 @@ py -3 -m vgo_cli.main canonical-entry `
 
 ### 5.7 不做
 - ❌ 决策引擎 / 召回 / 梯次 / 再制造（毕设阶段）
+
+### 5.8 Wave 4 决策（2026-05-24，用户 D22 起点）
+- ✅ **前端不用 plus-ui，从零搭 shadcn-vue**（用户优先级：视觉风格 > 工期）
+  - 视觉层：shadcn-vue（Reka UI + Tailwind 4，New York 风格 + zinc 主题）
+  - 业务壳层：自行重写（axios 拦截器 / 动态菜单 / 路由守卫 / 权限指令 / 字典 / Pinia user store）
+  - 工程：Vite + Vue 3.4 + TypeScript + pnpm
+- ✅ **每个角色都要有专属界面**（不启用 R1 砍范围）
+- ✅ **deadline 顺延 +4 天到 D34**（用户接受）
+- ✅ 路径决策时机：D22 末（项目目录 `apps/admin-web/`，与未来 `apps/user-app/` 平级）
 - ❌ ClickHouse / Elasticsearch / Kafka
 - ❌ K8s / CI/CD
 - ❌ 真实支付接入
@@ -849,50 +858,49 @@ RuoYi 作者已预留 JDK 21 镜像，注释互换即可，零风险。
 
 ---
 
-## 7. 接下来要做（Wave 3 D15 起）
+## 7. 接下来要做（Wave 4 D22 起）
 
-### 7.1 紧接 Wave 3 D15-D21（推荐下一步）
+### 7.1 紧接 Wave 4 D22-D34（前端 shadcn-vue 从零搭，全角色界面）
 
-Wave 2 已完成（tag `wave-2-end`），进入 **Wave 3：Marketplace + Carbon**。按执行计划：
+**重大决策（2026-05-24）**：用户在 D22 起点放弃 plus-ui 改走 shadcn-vue + 不接受 R1 砍范围。详见 §5.8。
+工期 D22-D30 → **D22-D34（顺延 +4 天）**。
 
-1. **D15-D17：nev-marketplace 模块**
-   - 新建 `backend/nev-modules/nev-marketplace` 子模块
-   - 商家上下架商品（nev_product 表）
-   - 购物车 / 订单 / 支付（mock 支付）
-   - 商品可选绑定 battery_id 实现"电池即商品"
-   - merchant / consumer 角色端点
-
-2. **D18-D20：nev-carbon 模块**
-   - 新建 `backend/nev-modules/nev-carbon` 子模块
-   - **碳计算引擎**：基于 nev_emission_factor（D5-D6 已灌 15 条）+ nev_battery_spec
-   - 5 阶段（RAW/MFG/TRANS/USE/EOL）碳足迹自动计算 → 写 nev_carbon_footprint + nev_carbon_stage
-   - 老仓 `E:/Study/IdeaProjects/NEV/backend/src/main/java/nev/service/CarbonCalculationService.java` 算法参考
-   - 碳积分账户：consumer 完成订单/换新自动扣减/加积分
-
-3. **D21：以旧换新（trade-in）+ Wave 3 收尾**
-   - 复用 nev_trade_in_request 表
-   - consumer 提交换新申请 → recycler 评估 → 完成
+| Day | 任务 | 输出 |
+|---|---|---|
+| **D22** | apps/admin-web 项目初始化：Vite + Vue3 + TS + Tailwind 4 + shadcn-vue + axios 双 header + login 跑通 | admin 登录拿到 JWT 跳转到 /  |
+| **D23** | 动态菜单 + 路由守卫 + Pinia user store + Layout（侧边栏+顶栏+面包屑） | 框架壳子 |
+| **D24** | admin 仪表盘 + 角色管理 + producer 注册电池表单 + distributor IN_USE 表单 | 4 个页面 |
+| **D25** | retailer SOLD 表单 + merchant 商品 CRUD + merchant 订单查看 | 3 个页面 |
+| **D26** | consumer 商城浏览 + 购物车 + 订单四态 + 碳积分账户 | 4 个页面 |
+| **D27** | consumer 以旧换新 + recycler 评估 + recycler 回收 | 3 个页面 |
+| **D28** | 公开扫码 H5 `/scan/:trace`（不在 Layout 内，独立路由）+ 整体抛光 | 扫码页 |
+| **D29-D30** | 全链路联调（producer→distributor→retailer→consumer→recycler 5 角色界面演示）+ bug 修 | 演示 ready |
+| **D31-D33** | API 文档（SpringDoc 端点清单）+ ER 图（dbdiagram.io）+ 合约设计 PDF 整理 + 演示视频脚本 | 文档全套 |
+| **D34** | 截图 / 录屏 / tag `wave-4-end` / 首版交付 | 答辩素材 |
 
 ### 7.2 历史 Wave 完成情况
 
 ～～Wave 1 D1-D7 全部交付～～ ✓（tag wave-1-end）
-～～Wave 2 D8 三合约设计～～ ✓（tag wave-2-d8-contracts）
-～～Wave 2 D9 合约编译～～ ✓（tag wave-2-d9-compiled）
-～～Wave 2 D10 nev-blockchain 模块～～ ✓（tag wave-2-d10-blockchain-module）
-～～Wave 2 D11 链上部署+授权～～ ✓（tag wave-2-d11-deployed）
-～～Wave 2 D12 producer 注册电池～～ ✓（tag wave-2-d12-battery-register）
-～～Wave 2 D13 distributor/retailer/recycler 事件～～ ✓（tag wave-2-d13-lifecycle-events）
-～～Wave 2 D14 公开扫码端点 + Wave 2 收尾～～ ✓（tag wave-2-end）
+～～Wave 2 D8-D14 区块链全套～～ ✓（tag wave-2-end，6 个子 tag）
+～～Wave 3 D15-D21 商城+碳核算+换新～～ ✓（tag wave-3-end，7 个子 tag）
 
-### 7.3 后续 Wave 概要
+### 7.3 Wave 4 工程栈
 
-| Wave | Day | 主题 | 关键产物 |
-|---|---|---|---|
-| W2 | 8-14 | Battery + Blockchain | 3 合约部署 + nev-battery + nev-blockchain 模块 |
-| W3 | 15-21 | Marketplace + Carbon | 商城闭环 + 碳核算 + 以旧换新 + 碳积分 |
-| W4 | 22-30 | Frontend + Polish | admin-web（plus-ui）+ user-app + 文档 + 演示彩排 |
-
-详见 `docs/plans/2026-05-14-*-execution-plan.md`。
+| 项 | 选择 |
+|---|---|
+| 包管理器 | **pnpm** |
+| 构建 | Vite 5 |
+| 语言 | TypeScript |
+| 框架 | Vue 3.4 |
+| 路由 | vue-router 4 |
+| 状态 | Pinia + pinia-plugin-persistedstate |
+| HTTP | axios |
+| UI | shadcn-vue（New York + zinc） |
+| 样式 | Tailwind CSS 4 |
+| 图标 | Lucide Vue Next |
+| 表单 | vee-validate + zod |
+| 工具 | VueUse |
+| 目录 | `apps/admin-web/`（与未来 `apps/user-app/` 平级） |
 
 ---
 
