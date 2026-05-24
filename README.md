@@ -246,6 +246,13 @@ mvn spring-boot:run
 
 > **绕过 Maven 命令**（推荐 IDE 启动）：IDEA 打开 `backend/`，找 `ruoyi-admin/src/main/java/.../NevApplication.java`，点绿色三角，断点 + 热重载都可用、且无乱码。
 
+> **启动日志里两条红字 ERROR**：`Failed to register at spring-boot-admin (localhost:9090)` + `SnailJob ... UNAVAILABLE` — 这是 RuoYi-Vue-Plus 自带的 **SBA 监控 Server**（9090）和 **SnailJob 调度 Server**（8800）的 Client 没找到对应 Server。本项目未启用这两个 Server，**业务零影响**，直接忽略。要消除日志噪音可在 `backend/ruoyi-admin/src/main/resources/logback-plus.xml` 加：
+> ```xml
+> <logger name="de.codecentric.boot.admin" level="OFF"/>
+> <logger name="com.aizuda.snailjob" level="OFF"/>
+> ```
+> 真要启 SBA/SnailJob Server：IDEA 中右键 `ruoyi-extend/ruoyi-monitor-admin/.../MonitorAdminApplication.java` → Run（SnailJob 同理；SnailJob 起前还要改 application-dev.yml 的 DB 地址为 `localhost:13306/nev_v2`）。
+
 ### 3. 启动前端
 
 ```bash
@@ -303,6 +310,43 @@ pnpm dev
 | 工期 / 计划 | [docs/plans/2026-05-14-...](docs/plans/2026-05-14-execution-plan-xl-wave-nev-v2-ruoyi-vue-plus-mysql-sa-token-myba-execution-plan.md) | 4 Wave / 30 天 XL 执行计划（FROZEN） |
 | 参考项目 | [docs/reference/README.md](docs/reference/README.md) | 老仓 + 2026037462 + shadcn-vue 方案变更说明 |
 | 历史分析 | [docs/legacy/analysis/2026-05-13-...](docs/legacy/analysis/2026-05-13-nev-vs-2026037462-comparison.md) | 新老仓对比报告 |
+
+---
+
+## Docker 化部署（可选 / 答辩前）
+
+项目 `backend/.run/` 下有 3 个 IDEA 配置带 🐳 鲸鱼图标 — `ruoyi-server`、`ruoyi-monitor-admin`、`ruoyi-snailjob-server`。**它们不是启动应用、而是 `docker build` 任务**，点了会执行：
+
+```bash
+docker build -f <模块>/Dockerfile -t ruoyi/<名字>:5.6.1 <模块>/
+```
+
+产出 3 个 Docker 镜像，配合 `backend/script/docker/docker-compose.yml`（自带 mysql + redis + nginx + minio）可一键起一套生产环境。
+
+**开发期不需要点鲸鱼**（IDEA 启 NevApplication 就够）。答辩前如果想做"镜像化部署演示"，按下面顺序：
+
+```bash
+# 1. 前端编译
+cd apps/admin-web && pnpm build       # 产 dist/
+
+# 2. 后端打 jar
+cd ../../backend
+mvn clean package -DskipTests          # 各模块 target/*.jar
+
+# 3. Docker build 3 个镜像（命令行或 IDEA 点 3 个鲸鱼）
+docker build -t ruoyi/ruoyi-server:5.6.1          -f ruoyi-admin/Dockerfile                          ruoyi-admin
+docker build -t ruoyi/ruoyi-monitor-admin:5.6.1   -f ruoyi-extend/ruoyi-monitor-admin/Dockerfile     ruoyi-extend/ruoyi-monitor-admin
+docker build -t ruoyi/ruoyi-snailjob-server:5.6.1 -f ruoyi-extend/ruoyi-snailjob-server/Dockerfile   ruoyi-extend/ruoyi-snailjob-server
+
+# 4. 起整套（注意：原版 compose 用 ry-vue 库 + 3306 端口，要改成 nev_v2 + 13306）
+cd script/docker
+docker compose up -d
+
+# 5. 验证
+docker ps                              # 看 7-8 个容器 healthy
+```
+
+> RuoYi 自带的 `backend/script/docker/docker-compose.yml` 是原版配置（`ry-vue` 库 / 3306 / nginx 监听 80），跟 NEV-v2 的 `nev_v2` 库 / 13306 / 8120 不一致。真要起，先改 compose 里的 DB 地址 + nginx 反代到 ruoyi-server。
 
 ---
 
