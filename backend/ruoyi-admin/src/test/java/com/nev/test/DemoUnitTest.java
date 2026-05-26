@@ -4,6 +4,7 @@ import com.nev.common.web.config.properties.CaptchaProperties;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.concurrent.TimeUnit;
 
@@ -12,6 +13,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Lion Li
  */
+@ActiveProfiles("test")
 @SpringBootTest // 此注解只能在 springboot 主包下使用 需包含 main 方法与 yml 配置文件
 @DisplayName("单元测试案例")
 public class DemoUnitTest {

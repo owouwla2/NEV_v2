@@ -1,0 +1,52 @@
+# NEV-v2 fix P2-001 / round-3 M-E: 完整 test profile（替代 round-2 partial 方案）
+#
+# 设计变更：放弃 src/test/resources/application.yml（会完全覆盖 main 配置导致 placeholder 失败）；
+# 改用 src/test/resources/application-test.yml + 测试基类 @ActiveProfiles("test")：
+#   - main application.yml 正常加载（所有 placeholder 解析）
+#   - 本文件仅 override 测试不需要的 Server 端连接 + 复制 dev profile 必要的数据源 / Redis / SnailJob 配置
+#
+# 启用方式：测试类必须显式 @ActiveProfiles("test")。
+
+# SnailJob：enabled=false 跳过 client 启动；其他字段保留以满足 @Value placeholder 解析
+snail-job:
+  enabled: false
+  group: "ruoyi_group"
+  token: "SJ_test_token_placeholder"
+  server:
+    host: 127.0.0.1
+    port: 17888
+  namespace: test
+  port: 29280     # SnailJob client 监听端口（测试不实际使用）
+  host:
+
+spring:
+  boot:
+    admin:
+      client:
+        # 关闭 SBA Client 注册（测试不需要监控）
+        enabled: false
+
+  # 数据源 / Redis：测试时 profile=test，不会自动加载 application-dev.yml；复制 dev 的连接信息
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    dynamic:
+      primary: master
+      strict: false
+      p6spy: false
+      datasource:
+        master:
+          type: com.zaxxer.hikari.HikariDataSource
+          driverClassName: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://localhost:13306/nev_v2?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
+          username: root
+          password: nev_v2_root_2026
+
+  data:
+    redis:
+      host: localhost
+      port: 16379           # B-1 (round-2) Windows Hyper-V 保留 6379，使用 16379
+      database: 1
+      password: nev_v2_redis_2026
+      timeout: 10s
+      ssl:
+        enabled: false

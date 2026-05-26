@@ -2,12 +2,14 @@ package com.nev.test;
 
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 /**
  * 标签单元测试案例
  *
  * @author Lion Li
  */
+@ActiveProfiles("test")
 @SpringBootTest
 @DisplayName("标签单元测试案例")
 public class TagUnitTest {
