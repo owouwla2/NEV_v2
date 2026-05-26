@@ -68,7 +68,7 @@ LifecycleTrace.sol  is  BatteryRegistry  is  RoleManager
 | `BatteryRegistry` | 电池数字身份 + dataHash | `registerBattery(traceNumber,hash)` |
 | `LifecycleTrace` | 6 类事件 AppendOnly + 链上版本号 | `addEvent(traceNumber,eventType,dataHash)` / `verifyEvent(traceNumber,version)` / `getEventCount(traceNumber)` |
 
-**校验机制**：MySQL `lifecycle_event` 每条记录保存 `tx_hash + chain_version + data_hash`；前端公开扫码页对每条事件调链 `verifyEvent()` 反验，整体 `overallVerified = (MySQL count == 链上 count) && (每条 verifyEvent == true)`。
+**校验机制**：MySQL `nev_battery_lifecycle` 每条记录保存 `tx_hash + version + data_hash`；前端公开扫码页对每条事件调链 `verifyEvent()` 反验，整体 `overallVerified = (MySQL count - PRODUCED == 链上 count) && (每条 verifyEvent/verifyBattery == true)`。链上 `events` 数组不含 PRODUCED（PRODUCED 走 `registerBattery` 单独存），扫码服务根据 event_type 分流到 `verifyEvent` 或 `verifyBattery`（详见 `BatteryScanService`）。
 
 ---
 
@@ -112,6 +112,26 @@ LifecycleTrace.sol  is  BatteryRegistry  is  RoleManager
 | `consumer` | 下单 + 以旧换新 + 公开扫码 | `consumer1` | `0x8385...c623` |
 | `recycler` | 评估 + 拆解 + RECYCLED 上链 | `recycler1` | `0xe3ca...5eb9` |
 
+## 路径速查（NEV-v2 fix P3-002 / round-3 M-D）
+
+⚠️ **前端 SPA 路由（浏览器地址栏）** 与 **后端 API 路径（curl 直调）** 不同，请勿混用：
+
+| 路径 | 类型 | 示例 | 说明 |
+|---|---|---|---|
+| `/scan/:trace` | 前端 SPA 路由 | `http://localhost:8120/scan/BAT-DEMO-001` | Vue Router 注册，浏览器访问 |
+| `/public/scan/{traceNumber}` | 后端 API | `curl http://localhost:9280/public/scan/BAT-DEMO-001` | `PublicScanController.scan()` |
+| `/public/carbon/{traceNumber}` | 后端 API | `curl :9280/public/carbon/BAT-DEMO-001` | 5 阶段碳足迹（GB-T 24067） |
+| `/public/product/list` | 后端 API（免登录） | `curl :9280/public/product/list?pageNum=1` | 商城公开商品 |
+| `/producer/battery/register` | 后端 API（需鉴权） | dual-header POST | 电池注册触发 PRODUCED 上链 |
+| `/distributor/battery/transfer-in` | 后端 API | dual-header POST | IN_USE 上链 |
+| `/retailer/battery/sell` | 后端 API | dual-header POST | SOLD 上链 |
+| `/recycler/battery/receive` | 后端 API | dual-header POST | RECYCLED 上链 |
+| `/consumer/order/{...}` | 后端 API | 商城 4 态 | merchant + consumer |
+| `/recycler/trade-in/{evaluate,pending}` | 后端 API | 以旧换新评估 | recycler 工作台 |
+| `/admin/carbon/calc/{traceNumber}` | 后端 API（admin） | 触发 5 阶段碳计算 | superadmin 手动入口 |
+
+**业务表全部带 `nev_` 前缀**：`nev_battery`, `nev_battery_lifecycle`, `nev_product`, `nev_cart`, `nev_order`, `nev_trade_in_request`, `nev_carbon_*`。
+
 ---
 
 ## 后端模块
@@ -124,7 +144,7 @@ backend/                       # ruoyi-vue-plus 5.6.1 fork
 ├── ruoyi-modules/             # RuoYi 原生业务模块（system / job / generator…）
 └── nev-modules/               # ⭐ 本项目业务模块
     ├── nev-blockchain/        # WeBASE HTTP 客户端 + 合约 invoker + 7 角色钱包注册
-    ├── nev-battery/           # battery + lifecycle_event + 公开扫码 BatteryScanVO
+    ├── nev-battery/           # nev_battery + nev_battery_lifecycle + 公开扫码 BatteryScanVO
     ├── nev-marketplace/       # product / cart / order 全流程
     └── nev-carbon/            # GB-T 24067 5 阶段计算 + 碳积分流水
 ```
@@ -201,10 +221,25 @@ NEV-v2/
 | 后端 API | **9280** | RuoYi `ruoyi-admin` 启动端口 |
 | Admin Web | **8120** | Vite dev server（生产构建后由 nginx 接管） |
 | MySQL | **13306** | 容器名 `nev-v2-mysql`，库名 `nev_v2` |
-| Redis | 6379 | 与老仓共用，业务通过 `database=1` 隔离 |
+| Redis | **16379** | ⚠️ Windows + Hyper-V 默认保留 6305-7404（含 6379/6479），改用 16379；业务通过 `database=1` 与老仓隔离 |
 | WeBASE-Front | 5002 | `/trans/handle` 调用入口（沿用老仓集群） |
 | WeBASE-Web | 5000 | 管理后台（沿用老仓集群） |
 | FISCO BCOS | group_1 | 4 节点 PBFT（沿用老仓集群） |
+
+> **⚠️ Windows Hyper-V 端口保留陷阱（NEV-v2 fix B-1）**
+>
+> Windows 10/11 启用 Hyper-V 或 WSL2 时会动态保留一段端口（每次开机不同），常见保留范围包含
+> `6305-7404`、`1103-1936` 等，覆盖了 Redis 默认 6379 与 6479。症状：`docker-compose up` 报
+> `ports are not available: bind: An attempt was made to access a socket in a way forbidden by its
+> access permissions`。
+>
+> 解决：使用 16379（已是当前默认）。排查命令：
+>
+> ```powershell
+> netsh int ipv4 show excludedportrange protocol=tcp
+> ```
+>
+> 详见 `docs/qa/round-2/fix-log.md §B-1`。
 
 ---
 
@@ -220,7 +255,7 @@ docker-compose up -d
 # 等到 nev-v2-mysql 健康检查通过（~15s）
 ```
 
-MySQL 初始化 SQL 会通过 `volumes/mysql/init/*.sql` 自动导入：RuoYi 基础表 + 7 角色 sys_user / sys_role + 业务表（battery / lifecycle_event / product / cart / order / trade_in / carbon_*）。
+MySQL 初始化 SQL 会通过 `volumes/mysql/init/*.sql` 自动导入：RuoYi 基础表 + 7 角色 sys_user / sys_role + 业务表（`nev_battery` / `nev_battery_lifecycle` / `nev_product` / `nev_cart` / `nev_order` / `nev_trade_in_request` / `nev_carbon_*`）。所有业务表统一带 `nev_` 前缀。
 
 ### 2. 启动后端
 

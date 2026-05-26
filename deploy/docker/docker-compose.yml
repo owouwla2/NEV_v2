@@ -3,7 +3,10 @@ name: nev-v2
 # NEV-v2 开发依赖：MySQL 8 + Redis 7
 # 与老仓 NEV 端口规划：
 #   - MySQL  13306  避开老仓 WeBASE 23306 / 老仓 backend 默认 3306
-#   - Redis  6379  老仓 Redis 也是 6379；如老仓 Redis 已占用，请先停或改 .env REDIS_PORT
+#   - Redis  16379  ⚠️ NEV-v2 fix B-1 (round-3 M-B)：默认 6379 在 Windows 10/11 + Hyper-V 下
+#                   经常被动态保留端口范围占用（6305-7404 等），bind 失败。改用 16379 避开。
+#                   排查命令：`netsh int ipv4 show excludedportrange protocol=tcp`
+#                   旧文档可能写 6479，但 6479 同样在保留区，请勿使用。
 # 业务隔离：application-*.yml 中 spring.data.redis.database = 1（老仓默认 0）
 # MinIO：D2 不起，Wave 3-4 需要时再加 service
 services:
@@ -48,7 +51,7 @@ services:
     container_name: nev-v2-redis
     restart: unless-stopped
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "${REDIS_PORT:-16379}:6379"
     environment:
       TZ: Asia/Shanghai
     command:
