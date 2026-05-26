@@ -1,0 +1,25 @@
+6379/tcp -> 0.0.0.0:16379
+6379/tcp -> [::]:16379
+Warning: Using a password with '-a' or '-u' option on the command line interface may not be safe.
+PONG
+  TCP    0.0.0.0:16379          0.0.0.0:0              LISTENING       28388
+  TCP    127.0.0.1:14011        127.0.0.1:16379        ESTABLISHED     30840
+  TCP    127.0.0.1:14012        127.0.0.1:16379        ESTABLISHED     30840
+  TCP    127.0.0.1:14013        127.0.0.1:16379        ESTABLISHED     30840
+  TCP    127.0.0.1:14014        127.0.0.1:16379        ESTABLISHED     30840
+  TCP    127.0.0.1:14015        127.0.0.1:16379        ESTABLISHED     30840
+  TCP    127.0.0.1:14016        127.0.0.1:16379        ESTABLISHED     30840
+  TCP    127.0.0.1:14017        127.0.0.1:16379        ESTABLISHED     30840
+  TCP    127.0.0.1:14018        127.0.0.1:16379        ESTABLISHED     30840
+  TCP    127.0.0.1:14019        127.0.0.1:16379        ESTABLISHED     30840
+  TCP    127.0.0.1:16379        127.0.0.1:14011        ESTABLISHED     28388
+  TCP    127.0.0.1:16379        127.0.0.1:14012        ESTABLISHED     28388
+  TCP    127.0.0.1:16379        127.0.0.1:14013        ESTABLISHED     28388
+  TCP    127.0.0.1:16379        127.0.0.1:14014        ESTABLISHED     28388
+  TCP    127.0.0.1:16379        127.0.0.1:14015        ESTABLISHED     28388
+  TCP    127.0.0.1:16379        127.0.0.1:14016        ESTABLISHED     28388
+  TCP    127.0.0.1:16379        127.0.0.1:14017        ESTABLISHED     28388
+  TCP    127.0.0.1:16379        127.0.0.1:14018        ESTABLISHED     28388
+  TCP    127.0.0.1:16379        127.0.0.1:14019        ESTABLISHED     28388
+  TCP    [::]:16379             [::]:0                 LISTENING       28388
+  TCP    [::1]:16379            [::]:0                 LISTENING       11376

@@ -1,0 +1,14 @@
+NAMES             STATUS                  PORTS
+nev-v2-redis      Up 10 hours (healthy)   0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp
+nev-v2-mysql      Up 10 hours (healthy)   0.0.0.0:13306->3306/tcp, [::]:13306->3306/tcp
+pcb-mysql         Up 10 hours             0.0.0.0:33306->3306/tcp, [::]:33306->3306/tcp
+nev-mongodb       Up 10 hours             27017/tcp
+webase-web        Up 10 hours             0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+webase-node-mgr   Up 10 hours             0.0.0.0:5001->5001/tcp, [::]:5001->5001/tcp
+webase-front      Up 10 hours             0.0.0.0:5002->5002/tcp, [::]:5002->5002/tcp
+webase-sign       Up 10 hours             0.0.0.0:5004->5004/tcp, [::]:5004->5004/tcp
+fisco-node2       Up 10 hours             0.0.0.0:8547->8547/tcp, [::]:8547->8547/tcp, 0.0.0.0:20202->20202/tcp, [::]:20202->20202/tcp, 0.0.0.0:30302->30302/tcp, [::]:30302->30302/tcp
+fisco-node3       Up 10 hours             0.0.0.0:8548->8548/tcp, [::]:8548->8548/tcp, 0.0.0.0:20203->20203/tcp, [::]:20203->20203/tcp, 0.0.0.0:30303->30303/tcp, [::]:30303->30303/tcp
+fisco-node1       Up 10 hours             0.0.0.0:8546->8546/tcp, [::]:8546->8546/tcp, 0.0.0.0:20201->20201/tcp, [::]:20201->20201/tcp, 0.0.0.0:30301->30301/tcp, [::]:30301->30301/tcp
+fisco-node0       Up 10 hours             0.0.0.0:8545->8545/tcp, [::]:8545->8545/tcp, 0.0.0.0:20200->20200/tcp, [::]:20200->20200/tcp, 0.0.0.0:30300->30300/tcp, [::]:30300->30300/tcp
+mysql-webase      Up 10 hours             0.0.0.0:23306->3306/tcp, [::]:23306->3306/tcp

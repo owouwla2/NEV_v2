@@ -1,0 +1,2 @@
+total	with_bn
+22	22

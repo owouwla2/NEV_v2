@@ -1,0 +1,36 @@
+=== Round-2 FINAL Closure Snapshot ===
+Date: 2026-05-26
+Status: ALL GREEN ✅
+
+--- M-1 verification (live backend after Redis port fix) ---
+Source: evidence/api-scan-FINAL.json
+overallVerified : true
+totalEvents     : 4
+verifiedEvents  : 4
+chainEventCount : 3
+per-event chainVerified: [true, true, true, true]
+
+--- M-3 verification ---
+cellSupplier bytes : E5AE81 E5BEB7 E697B6 E4BBA3 (UTF-8 「宁德时代」) ✅
+
+--- M-2 verification ---
+sys-error.log last 200 lines, SnailJob/SBA ERROR count = 0 ✅
+
+--- O-2 verification ---
+nev_battery_lifecycle: total=22, with_block_number=22  (100% backfill) ✅
+
+--- B-1 (Bonus fix) verification: Windows Hyper-V 6379 reservation ---
+- Windows excludedportrange 包含 6305-7404 (含 6379 / 6479)
+- 修复：Redis 容器端口改为 :16379 + backend application-dev.yml 同步
+- 当前: 0.0.0.0:16379 LISTENING + Redis PING -> PONG ✅
+- evidence/windows-hyperv-port-reserved.txt
+- evidence/redis-port-mapping-after-B1.txt
+
+--- WeBASE ABI registration (persistent) ---
+- LifecycleTrace abiId=495821 @ 0xf71701365b8b35d4a03a12ecc51edf5fd5797b08
+- DataAnchor    abiId=372275 (legacy)
+
+--- Round-2 Final Sign-off ---
+M-1 ✅ | M-2 ✅ | M-3 ✅ | O-2 ✅ | B-1 ✅ | O-4 ⚠️partial | O-1 ⏸skipped
+Demo readiness: 100% (3 mandatory items cleared + 1 bonus environment fix)
+Round-2 governance run: 20260524T115714Z-9fddb02e
