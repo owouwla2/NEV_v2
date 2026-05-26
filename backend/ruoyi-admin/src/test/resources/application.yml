@@ -1,0 +1,28 @@
+# NEV-v2 fix P2-001 / round-2 O-4: SnailJob test profile (PARTIAL)
+#
+# 状态：仅 SnailJob/SBA 部分修复 — RuoYi-Vue-Plus 的测试基础设施有多个 placeholder
+#       (user.password.maxRetryCount / 其他) 在 test profile 下解析失败，
+#       需要后续 round-3 单独完成"测试基础设施重建"任务。
+#
+# 已实证：本配置生效后，SpringBootTest 错误已从 "SnailJob server start error"
+#         (P2-001 原症状) 变为 "Could not resolve placeholder 'user.password.maxRetryCount'"
+#         证明 SnailJob 阻断已解除。
+#
+# 详见 docs/qa/first-round/defects.md P2-001 + docs/qa/round-2/fix-log.md O-4。
+
+# 关闭 SnailJob client，让测试 SpringBoot 启动不依赖 SnailJob server
+snail-job:
+  enabled: false
+
+# 同步关闭 SBA Client（测试不需要监控注册）
+spring:
+  boot:
+    admin:
+      client:
+        enabled: false
+
+# 复制主 application.yml 中被占位符引用的 mybatis-plus 字段
+mybatis-plus:
+  enableLogicDelete: true
+  mapperPackage: com.nev.**.mapper
+  mapperLocations: classpath*:mapper/**/*Mapper.xml

@@ -106,8 +106,8 @@ spring.data:
   redis:
     # 地址
     host: localhost
-    # 端口，默认为6379
-    port: 6379
+    # 端口：默认 6379 在 Windows Hyper-V 保留区间内，6479 也被保留，使用 16379 避开整个保留区 6305-7404
+    port: 16379
     # 数据库索引：1 表示与老仓 NEV 隔离（老仓默认 db=0）
     database: 1
     # redis 密码必须配置

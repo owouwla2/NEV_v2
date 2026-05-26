@@ -117,6 +117,12 @@
 <!--        </encoder>-->
 <!--    </appender>-->
 
+    <!-- NEV-v2 fix P3-003: 抑制未启用的 SBA / SnailJob Client 端噪声日志 -->
+    <!-- SBA Server (9090) 与 SnailJob Server (8800) 未在本项目启用，Client 端每 10 秒一次 grpc/http heartbeat 失败 -->
+    <!-- 详见 docs/qa/first-round/defects.md P3-003 与 README.md 启动章节 -->
+    <logger name="de.codecentric.boot.admin" level="OFF"/>
+    <logger name="com.aizuda.snailjob" level="OFF"/>
+
     <!--系统操作日志-->
     <root level="info">
         <appender-ref ref="console" />
