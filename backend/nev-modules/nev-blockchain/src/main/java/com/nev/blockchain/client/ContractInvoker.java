@@ -160,10 +160,11 @@ public class ContractInvoker {
             builder.success(success);
 
             // 2. txHash / blockNumber（写链调用才有）
+            //    NEV-v2 fix P2-002 / round-2 O-2: WeBASE receipt 中 blockNumber 是字符串 ("140")，
+            //    需要 longOrNull 兼容 NumericNode / TextNode 两种形态，否则 22/22 全部 NULL。
             if (writeCall) {
                 builder.txHash(textOrNull(root, "transactionHash", "txHash"));
-                JsonNode bn = firstNode(root, "blockNumber");
-                builder.blockNumber(bn != null && bn.canConvertToLong() ? bn.asLong() : null);
+                builder.blockNumber(longOrNull(firstNode(root, "blockNumber")));
             }
 
             // 3. message
@@ -184,6 +185,33 @@ public class ContractInvoker {
                 .message(response);
         }
         return builder.build();
+    }
+
+    /**
+     * NEV-v2 fix P2-002 / round-2 O-2:
+     * WeBASE-Front 返回 blockNumber 既可能是数字 (140) 也可能是字符串 ("140") 甚至 hex ("0x8c")。
+     * 兼容三种形态，提取 long；解析失败返回 null。
+     */
+    private Long longOrNull(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return null;
+        }
+        if (node.canConvertToLong()) {
+            return node.asLong();
+        }
+        String txt = node.asText(null);
+        if (txt == null || txt.isBlank()) {
+            return null;
+        }
+        try {
+            if (txt.startsWith("0x") || txt.startsWith("0X")) {
+                return Long.parseLong(txt.substring(2), 16);
+            }
+            return Long.parseLong(txt);
+        } catch (NumberFormatException ex) {
+            log.warn("[blockchain] longOrNull 解析失败: {}", txt);
+            return null;
+        }
     }
 
     private boolean isSuccess(JsonNode root) {
