@@ -4,8 +4,9 @@
 > 新对话框只需要让 Claude 先读完本文档，就能无损接上之前的所有进度、约定、踩过的坑。
 >
 > **创建日期**：2026-05-15
-> **最后更新**：2026-05-24
-> **当前进度**：🏆 **首版交付完成**（tag `wave-4-end`）—— 后端 38 模块 + 前端 12 业务页 + 5 角色端到端 e2e 全验证通过；文档/演示视频留答辩前补
+> **最后更新**：2026-05-26
+> **当前进度**：🏆 **首版交付完成**（tag `wave-4-end`）+ ✅ **QA 三轮收尾**（round-3 5/5 修复 GREEN · commit `891b645` · 演示就绪度 100%）
+> **QA 全景**：[`docs/qa/README.md`](docs/qa/README.md)
 > **位置**：`E:/Study/IdeaProjects/NEV-v2/HANDOFF.md`
 
 ---
@@ -858,33 +859,52 @@ RuoYi 作者已预留 JDK 21 镜像，注释互换即可，零风险。
 
 ---
 
-## 7. 接下来要做（Wave 4 D22 起）
+## 7. 接下来要做（QA Round-4 起 / 毕设阶段长期项）
 
-### 7.1 紧接 Wave 4 D22-D34（前端 shadcn-vue 从零搭，全角色界面）
+### 7.1 现状（2026-05-26）
 
-**重大决策（2026-05-24）**：用户在 D22 起点放弃 plus-ui 改走 shadcn-vue + 不接受 R1 砍范围。详见 §5.8。
-工期 D22-D30 → **D22-D34（顺延 +4 天）**。
+**Wave 1-4 已全部交付**（首版 tag `wave-4-end`），**QA 三轮已完成**：
 
-| Day | 任务 | 输出 |
-|---|---|---|
-| **D22** | apps/admin-web 项目初始化：Vite + Vue3 + TS + Tailwind 4 + shadcn-vue + axios 双 header + login 跑通 | admin 登录拿到 JWT 跳转到 /  |
-| **D23** | 动态菜单 + 路由守卫 + Pinia user store + Layout（侧边栏+顶栏+面包屑） | 框架壳子 |
-| **D24** | admin 仪表盘 + 角色管理 + producer 注册电池表单 + distributor IN_USE 表单 | 4 个页面 |
-| **D25** | retailer SOLD 表单 + merchant 商品 CRUD + merchant 订单查看 | 3 个页面 |
-| **D26** | consumer 商城浏览 + 购物车 + 订单四态 + 碳积分账户 | 4 个页面 |
-| **D27** | consumer 以旧换新 + recycler 评估 + recycler 回收 | 3 个页面 |
-| **D28** | 公开扫码 H5 `/scan/:trace`（不在 Layout 内，独立路由）+ 整体抛光 | 扫码页 |
-| **D29-D30** | 全链路联调（producer→distributor→retailer→consumer→recycler 5 角色界面演示）+ bug 修 | 演示 ready |
-| **D31-D33** | API 文档（SpringDoc 端点清单）+ ER 图（dbdiagram.io）+ 合约设计 PDF 整理 + 演示视频脚本 | 文档全套 |
-| **D34** | 截图 / 录屏 / tag `wave-4-end` / 首版交付 | 答辩素材 |
+- First-round（2026-05-24）：45 用例 / 9 缺陷（3 P1 + 3 P2 + 3 P3），见 `docs/qa/first-round/`
+- Round-2（2026-05-25，commit `97e5be4`）：6 项关键缺陷修复（M-1 链上 verify / M-2 日志噪声 / M-3 中文乱码 / O-2 block_number / O-4 partial / B-1 Hyper-V 6379）
+- Round-3（2026-05-26，commit `891b645`）：5 项收尾（M-A skipTests / M-B Hyper-V 文档防御 / M-C 演示数据净化 / M-D 文档术语对齐 / M-E 测试基设完整）
 
-### 7.2 历史 Wave 完成情况
+**演示就绪度 100%**，可立即彩排答辩。
 
-～～Wave 1 D1-D7 全部交付～～ ✓（tag wave-1-end）
-～～Wave 2 D8-D14 区块链全套～～ ✓（tag wave-2-end，6 个子 tag）
-～～Wave 3 D15-D21 商城+碳核算+换新～～ ✓（tag wave-3-end，7 个子 tag）
+### 7.2 Round-4 / 毕设阶段长期项（多日，不阻断答辩）
 
-### 7.3 Wave 4 工程栈
+| 优先级 | 项 | 估时 | 说明 |
+|---|---|---|---|
+| 高 | P1-002 业务模块单元测试源补齐 | 多日 | round-3 时间不足，留 round-4 |
+|   | - BatteryScanService（M-1 修复后逻辑必补单测） | 0.5d | |
+|   | - ContractInvoker.longOrNull（O-2 修复后逻辑） | 0.5d | |
+|   | - CarbonCalcService（GB-T 24067 5 阶段） | 1d | |
+|   | - OrderService / TradeInService（商城 + 以旧换新） | 1d | |
+|   | - 给业务测试加 `@Tag("dev")` 让 mvn test 默认能跑 | 0.5d | RuoYi surefire 按 `@Tag` 过滤 |
+| 中 | 引入 JaCoCo 覆盖率报告 + 基线阈值 30% | 0.5d | |
+| 中 | M-3 输入层防御：API 入参拒绝 `EFBFBD` 字节字符串 | 0.5d | 防止再次写入乱码 |
+| 低 | O-1（P3-001）重新评估：HTTP 401 规范化是否值得做 | 1h（评估） | round-2 决策跳过，避免破坏前端 axios 拦截器 |
+
+### 7.3 答辩前可选短期项
+
+- [ ] SpringDoc `@Operation` 注解补全（业务接口约 30 个）
+- [ ] ER 图（从 schema SQL 自动生成）
+- [ ] 合约设计 PDF（继承结构 + 6 EventType 时序）
+- [ ] 演示视频脚本 + 录制（5 角色 e2e 走完 + 公开扫码）
+- [ ] 触发一次 producer1 register 新电池验证 O-2 future write blockNumber 实时回写（会污染 demo 数据，需准备清理脚本）
+
+### 7.4 历史交付清单（已归档）
+
+～～Wave 1 D1-D7 全部交付～～ ✓（tag `wave-1-end`）
+～～Wave 2 D8-D14 区块链全套～～ ✓（tag `wave-2-end`，6 个子 tag）
+～～Wave 3 D15-D21 商城+碳核算+换新～～ ✓（tag `wave-3-end`，7 个子 tag）
+～～Wave 4 D22-D34 前端 shadcn-vue 全量重写 + e2e～～ ✓（tag `wave-4-end` 🏆）
+～～QA First-round / Round-2 / Round-3～～ ✓（演示就绪度 100%，commit `891b645`）
+
+> Wave 4 关键决策（D22 起放弃 plus-ui 改走 shadcn-vue）见 §5.8；
+> 原 D22-D34 详细任务表已并入历史归档，不再展开（详见 `docs/qa/README.md` 与各 Wave 子 tag commit history）。
+
+### 7.5 Wave 4 工程栈（参考用，已落地）
 
 | 项 | 选择 |
 |---|---|
