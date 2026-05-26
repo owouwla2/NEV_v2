@@ -1,0 +1,4 @@
+             如需本地快速构建跳过测试请显式 -DskipTests=true 或用 Maven profile -->
+        <skipTests>false</skipTests>
+    </properties>
+

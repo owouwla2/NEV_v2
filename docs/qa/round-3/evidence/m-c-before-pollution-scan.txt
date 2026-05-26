@@ -1,0 +1,7 @@
+mysql: [Warning] Using a password on the command line interface can be insecure.
+trace_number	event_type	version	has_pollution
+BAT-DEMO-001	IN_USE	2	1
+BAT-DEMO-001	SOLD	3	1
+BAT-DEMO-001	RECYCLED	4	1
+BAT-DEMO-002	PRODUCED	1	1
+BAT-DEMO-003	PRODUCED	1	1
