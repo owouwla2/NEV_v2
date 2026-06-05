@@ -1,0 +1,28 @@
+Command:
+mvn -pl nev-modules/nev-battery,nev-modules/nev-blockchain,nev-modules/nev-carbon,nev-modules/nev-marketplace -am test -DskipTests=false
+
+Workdir:
+E:\Study\IdeaProjects\NEV-v2\backend
+
+Finished:
+2026-06-05T16:53:34+08:00
+
+Result:
+BUILD SUCCESS
+
+Target module test summary:
+- nev-blockchain: 17 tests, 0 failures, 0 errors, 0 skipped
+- nev-battery: 9 tests, 0 failures, 0 errors, 0 skipped
+- nev-carbon: 14 tests, 0 failures, 0 errors, 0 skipped
+- nev-marketplace: 35 tests, 0 failures, 0 errors, 0 skipped
+- target total: 75 tests, 0 failures, 0 errors, 0 skipped
+
+JaCoCo check:
+- nev-blockchain: All coverage checks have been met.
+- nev-battery: All coverage checks have been met.
+- nev-carbon: All coverage checks have been met.
+- nev-marketplace: All coverage checks have been met.
+
+Residual warning:
+Mockito inline mock maker self-attaches a Byte Buddy agent on JDK 21.
+This is a warning only in this run; the Maven build completed successfully.

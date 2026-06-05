@@ -1,5 +1,6 @@
 package com.nev.marketplace.dto;
 
+import com.nev.common.core.validate.encoding.NoReplacementChar;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -28,12 +29,15 @@ public class ProductSaveDTO implements Serializable {
 
     @NotBlank(message = "商品标题不能为空")
     @Size(max = 200, message = "商品标题不能超过 200 字")
+    @NoReplacementChar
     private String title;
 
     @Size(max = 255, message = "副标题不能超过 255 字")
+    @NoReplacementChar
     private String subtitle;
 
     @NotBlank(message = "商品类目不能为空")
+    @NoReplacementChar
     private String category;
 
     @NotNull(message = "单价不能为空")
@@ -48,11 +52,13 @@ public class ProductSaveDTO implements Serializable {
     private Long batteryId;
 
     /** 图片 URL 列表，后端用 JSON 数组字符串存入 nev_product.images */
-    private List<String> images;
+    private List<@NoReplacementChar String> images;
 
     /** 商品详情富文本 */
+    @NoReplacementChar
     private String description;
 
     /** 状态（默认 ON_SALE，可传 OFF_SHELF 直接下架） */
+    @NoReplacementChar
     private String status;
 }

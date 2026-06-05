@@ -1,5 +1,6 @@
 package com.nev.battery.dto;
 
+import com.nev.common.core.validate.encoding.NoReplacementChar;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -20,15 +21,18 @@ public class SellDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @NotBlank(message = "溯源编号不能为空")
+    @NoReplacementChar
     private String traceNumber;
 
     /** 订单号（业务订单 nev_order.order_no；本轮 demo 可填任意编号） */
     @NotBlank(message = "订单号不能为空")
+    @NoReplacementChar
     private String orderNo;
 
     /** 购买的消费者 user_id（必须存在且角色=consumer） */
     @NotNull(message = "消费者 user_id 不能为空")
     private Long consumerId;
 
+    @NoReplacementChar
     private String remark;
 }

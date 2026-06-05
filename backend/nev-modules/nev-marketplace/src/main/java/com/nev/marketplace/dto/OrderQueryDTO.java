@@ -1,5 +1,6 @@
 package com.nev.marketplace.dto;
 
+import com.nev.common.core.validate.encoding.NoReplacementChar;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
@@ -19,6 +20,7 @@ public class OrderQueryDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /** 状态过滤（PENDING/PAID/SHIPPED/...，null = 全部） */
+    @NoReplacementChar
     private String status;
 
     @Min(value = 1) private Integer pageNum = 1;

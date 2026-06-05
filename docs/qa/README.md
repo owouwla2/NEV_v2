@@ -2,7 +2,7 @@
 
 > 本目录归档项目所有测试质量保障产物。按"轮次（round）"组织：每轮独立目录，自带 fix-log + test-report + evidence 三件套。
 >
-> **当前状态**：✅ Round-3 收尾完毕，**演示就绪度 100%**，下一步进入 Round-4（毕设阶段长期项）。
+> **当前状态**：✅ Round-4 本地工程验证完成：目标 NEV 模块 75 tests 全绿，JaCoCo 30% line coverage baseline 已强制通过；演示就绪度保持 100%。
 
 ---
 
@@ -13,7 +13,7 @@
 | First-round | 2026-05-24 | (在 docs 提交链中) | 45 用例 / 9 缺陷分级 | ✅ 完成 |
 | Round-2 | 2026-05-25 | `97e5be4` | 6 项关键修复 + 1 项决策跳过 | ✅ 完成 |
 | Round-3 | 2026-05-26 | `891b645` | 5 项收尾修复（5/5 GREEN） | ✅ 完成 |
-| Round-4 | 待启动 | — | 业务单测补齐 + JaCoCo + 输入层防御 | ⏸ 长期项 |
+| Round-4 | 2026-06-05 | （待提交） | 75 tests + JaCoCo 30% + 输入层防御 + O-1 复审 | ✅ 工程验证完成 |
 
 ---
 
@@ -35,12 +35,12 @@
 | ID | 等级 | 缺陷 | 后续修复 |
 |---|---|---|---|
 | P1-001 | P1 | 链上 verifyEvent 全失败（overallVerified=false） | round-2 M-1 |
-| P1-002 | P1 | 业务模块单元测试源缺失 | ⏸ round-4 |
+| P1-002 | P1 | 业务模块单元测试源缺失 | round-4 R4-A |
 | P1-003 | P1 | backend/pom.xml `<skipTests>true</skipTests>` | round-3 M-A |
 | P2-001 | P2 | 测试 SnailJob 启动失败 | round-2 O-4 partial → round-3 M-E |
 | P2-002 | P2 | `nev_battery_lifecycle.block_number` 全 NULL | round-2 O-2 |
 | P2-003 | P2 | BAT-DEMO-001 中文乱码（U+FFFD） | round-2 M-3 → round-3 M-C |
-| P3-001 | P3 | HTTP 401 规范化未做 | ⏸ round-2 决策跳过 |
+| P3-001 | P3 | HTTP 401 规范化未做 | round-4 R4-D 复审保留 |
 | P3-002 | P3 | README/HANDOFF 文档术语不一致 | round-3 M-D |
 | P3-003 | P3 | SnailJob/SBA 日志噪声 | round-2 M-2 |
 
@@ -120,40 +120,56 @@
 
 ---
 
-## 4. Round-4（长期项 · 毕设阶段）
+## 4. Round-4（业务单测 + 覆盖率基线）
 
-**未启动**。不阻断答辩，建议毕设阶段统一推进。
+**目录**：[`round-4/`](round-4/)
+**工程收尾**：2026-06-05
+**验证命令**：`mvn -pl nev-modules/nev-battery,nev-modules/nev-blockchain,nev-modules/nev-carbon,nev-modules/nev-marketplace -am test -DskipTests=false`
 
-### 4.1 长期工作
+| 文件 | 用途 |
+|---|---|
+| [fix-log.md](round-4/fix-log.md) | 4 项 Round-4 工作完整日志 |
+| [test-report.md](round-4/test-report.md) | 四轮测试报告与覆盖率结果 |
+| [evidence/](round-4/evidence/) | Maven / coverage / input defense / O-1 review 证据 |
 
-| 优先级 | 项 | 估时 | 来源 |
+**完成矩阵**：
+
+| ID | 项 | 状态 | 验证 |
 |---|---|---|---|
-| 高 | P1-002 业务模块单测补齐 | 多日 | first-round 缺陷 |
-|   | - BatteryScanService（M-1 修复后逻辑） | 0.5d | |
-|   | - ContractInvoker.longOrNull（O-2 修复后逻辑） | 0.5d | |
-|   | - CarbonCalcService（GB-T 24067 5 阶段） | 1d | |
-|   | - OrderService / TradeInService（商城 + 以旧换新） | 1d | |
-|   | - 给业务测试加 `@Tag("dev")` 让 `mvn test` 默认能跑 | 0.5d | round-3 已知限制 |
-| 中 | 引入 JaCoCo 覆盖率报告 + 基线阈值 30% | 0.5d | round-3 建议 |
-| 中 | M-3 输入层防御：API 入参拒绝 `EFBFBD` 字节字符串 | 0.5d | round-3 建议 |
-| 低 | O-1（P3-001）重新评估：HTTP 401 规范化是否值得做 | 1h（评估） | round-2 决策待复审 |
+| R4-A | P1-002 业务模块单测补齐 | ✅ | 10 个测试类 / 75 tests / 0 failure |
+| R4-B | JaCoCo 覆盖率报告 + 30% 行覆盖率基线 | ✅ | 4 个 NEV 模块 `jacoco:check` 全过 |
+| R4-C | M-3 输入层防御：拒绝 U+FFFD / `EFBFBD` 解码污染 | ✅ | `NoReplacementChar` + DTO/controller 反射测试 |
+| R4-D | O-1 HTTP 401 规范化复审 | ✅ review-only | 保留 HTTP 200 + body `code=401/403` 设计 |
 
-### 4.2 答辩前可选
+**覆盖率结果**：
 
-- 触发一次 producer1 register 新电池验证 O-2 future write blockNumber 实时回写（会污染 demo 数据，需准备清理脚本）
-- 答辩前 3 项前端手动抽检（首轮挂起，已不强制）
+| 模块 | Line coverage |
+|---|---:|
+| `nev-battery` | 53.29% |
+| `nev-blockchain` | 44.50% |
+| `nev-carbon` | 32.92% |
+| `nev-marketplace` | 40.25% |
+| **target total** | **41.74%** |
+
+**残留说明**：
+
+- Mockito inline mock maker 在 JDK 21 下输出 dynamic-agent warning；当前构建成功，后续可改显式 javaagent。
+- O-1 是复审决策保留，不代表实际 HTTP status 已改为 401/403。
 
 ---
 
-## 5. 治理凭证（vibe 三轮 session）
+## 5. 治理凭证（vibe sessions）
 
 | 轮次 | vibe session | 入口 |
 |---|---|---|
 | First-round | `20260524T103530Z-*`（首轮治理） | `docs/plans/2026-05-24-*-execution-plan.md` |
 | Round-2 | `20260524T115714Z-9fddb02e` | `docs/qa/round-2/fix-log.md` 头部 |
 | Round-3 | `20260526T010924Z-3dc8e66a` | `docs/plans/2026-05-26-*-execution-plan.md` |
+| Round-4 | `20260528T123835Z-863b1823` | `docs/requirements/2026-05-28-...round-4...md` + `docs/plans/2026-05-28-...round-4...md` |
 
 所有 vibe session 产物归档在 `outputs/runtime/vibe-sessions/{session_id}/`。
+
+Round-4 的历史治理 run 曾出现 closeout/delivery acceptance 侧的失败信号；本索引只声明 2026-06-05 的**本地工程验证成功**，不把该历史 run 追认为 canonical governance 全绿。
 
 ---
 
@@ -161,15 +177,19 @@
 
 ✅ **可声明**：
 
-- "首轮 9 项缺陷 + round-2 新发现 1 项 = 共 10 项缺陷，已修 8 项 + 1 partial→完整 + 1 决策跳过"
+- "首轮 P1-002 已在 Round-4 工程补齐；O-1/P3-001 已复审并决策保留现状"
 - "Round-3 5 项修复全部 fix-then-verified（M-A/M-B/M-C/M-D/M-E）"
+- "Round-4 目标 NEV 业务模块单测补齐：10 个测试类 / 75 tests / 0 failure"
+- "JaCoCo 已引入，4 个目标 NEV 模块均通过 30% line coverage baseline"
+- "M-3 输入层防御已加：关键 DTO/参数拒绝 U+FFFD / `EFBFBD` 解码污染"
+- "O-1 已复审，决策保留当前 HTTP 200 + body `code=401/403` 模型"
 - "测试基础设施可用，SpringBootTest 上下文可成功加载"
 - "答辩演示数据净化完毕，演示就绪度 100%"
 
 ❌ **不可声明**：
 
-- "全部缺陷已修" — P1-002 业务单测仍未补，留 round-4
-- "测试覆盖率达标" — JaCoCo 未引入
+- "HTTP 鉴权错误实际 status 已规范化为 401/403" — O-1 是 review-only 保留现状
+- "Round-4 历史 vibe run 已完整治理成功" — 本轮只声明工程验证成功
 - "零文档债务" — 仍有部分上游 RuoYi-Vue-Plus 文档与代码不一致（不在本项目范围）
 
 ---
@@ -177,6 +197,7 @@
 ## 7. 与项目主索引的关联
 
 - 项目顶部状态：[README.md](../../README.md) "状态" / "QA" / "开发路线" / "答辩前 TODO" 四处
-- 交接接续点：[HANDOFF.md §7](../../HANDOFF.md) "接下来要做（QA Round-4 起）"
+- 交接接续点：[HANDOFF.md §7](../../HANDOFF.md) "接下来要做（Round-4 已完成后的短期项）"
 - Round-2 关键文档锚点：[README.md L242](../../README.md) Hyper-V 警告块引用 `round-2/fix-log.md §B-1`
 - Round-3 关键文档锚点：[README.md L115](../../README.md) "路径速查（NEV-v2 fix P3-002 / round-3 M-D）"
+- Round-4 关键文档锚点：[round-4/test-report.md](round-4/test-report.md) 75 tests + JaCoCo 30% baseline

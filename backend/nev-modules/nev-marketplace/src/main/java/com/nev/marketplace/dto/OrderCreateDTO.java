@@ -1,5 +1,6 @@
 package com.nev.marketplace.dto;
 
+import com.nev.common.core.validate.encoding.NoReplacementChar;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -28,5 +29,6 @@ public class OrderCreateDTO implements Serializable {
     @Valid
     private AddressDTO address;
 
+    @NoReplacementChar
     private String remark;
 }

@@ -1,5 +1,6 @@
 package com.nev.marketplace.dto;
 
+import com.nev.common.core.validate.encoding.NoReplacementChar;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
@@ -19,9 +20,11 @@ public class ProductQueryDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /** 商品类目过滤（可空） */
+    @NoReplacementChar
     private String category;
 
     /** 标题模糊（可空） */
+    @NoReplacementChar
     private String keyword;
 
     /** 商家 ID 过滤（可空） */

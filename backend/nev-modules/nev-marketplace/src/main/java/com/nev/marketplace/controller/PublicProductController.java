@@ -5,6 +5,7 @@ import com.nev.common.core.domain.R;
 import com.nev.marketplace.dto.ProductQueryDTO;
 import com.nev.marketplace.dto.ProductVO;
 import com.nev.marketplace.service.ProductService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +27,7 @@ public class PublicProductController {
     private final ProductService productService;
 
     @GetMapping("/list")
-    public R<Page<ProductVO>> list(@ModelAttribute ProductQueryDTO q) {
+    public R<Page<ProductVO>> list(@Valid @ModelAttribute ProductQueryDTO q) {
         return R.ok(productService.publicSearch(q));
     }
 }

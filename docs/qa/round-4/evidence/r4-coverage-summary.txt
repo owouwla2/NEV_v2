@@ -1,0 +1,14 @@
+JaCoCo line coverage after Round-4 final verification:
+
+Module          Line missed  Line covered  Line coverage
+nev-battery     135          154           53.29%
+nev-blockchain  111          89            44.50%
+nev-carbon      214          105           32.92%
+nev-marketplace 429          289           40.25%
+target-total    889          637           41.74%
+
+Threshold:
+LINE COVEREDRATIO >= 0.30
+
+Result:
+All four target NEV modules passed jacoco:check.

@@ -2,11 +2,13 @@ package com.nev.marketplace.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.nev.common.core.domain.R;
+import com.nev.common.core.validate.encoding.NoReplacementChar;
 import com.nev.marketplace.dto.TradeInSubmitDTO;
 import com.nev.marketplace.dto.TradeInVO;
 import com.nev.marketplace.service.TradeInService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,6 +17,7 @@ import java.util.List;
 @RequestMapping("/consumer/trade-in")
 @RequiredArgsConstructor
 @SaCheckRole("consumer")
+@Validated
 public class ConsumerTradeInController {
 
     private final TradeInService tradeInService;
@@ -30,7 +33,8 @@ public class ConsumerTradeInController {
     }
 
     @PostMapping("/reject/{id}")
-    public R<TradeInVO> reject(@PathVariable Long id, @RequestParam(required = false) String reason) {
+    public R<TradeInVO> reject(@PathVariable Long id,
+                               @NoReplacementChar @RequestParam(required = false) String reason) {
         return R.ok(tradeInService.reject(id, reason));
     }
 

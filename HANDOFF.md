@@ -4,8 +4,8 @@
 > 新对话框只需要让 Claude 先读完本文档，就能无损接上之前的所有进度、约定、踩过的坑。
 >
 > **创建日期**：2026-05-15
-> **最后更新**：2026-05-26
-> **当前进度**：🏆 **首版交付完成**（tag `wave-4-end`）+ ✅ **QA 三轮收尾**（round-3 5/5 修复 GREEN · commit `891b645` · 演示就绪度 100%）
+> **最后更新**：2026-06-05
+> **当前进度**：🏆 **首版交付完成**（tag `wave-4-end`）+ ✅ **QA 四轮收尾**（round-4 本地工程验证：75 tests GREEN · JaCoCo 30% baseline 通过 · 演示就绪度 100%）
 > **QA 全景**：[`docs/qa/README.md`](docs/qa/README.md)
 > **位置**：`E:/Study/IdeaProjects/NEV-v2/HANDOFF.md`
 
@@ -859,31 +859,31 @@ RuoYi 作者已预留 JDK 21 镜像，注释互换即可，零风险。
 
 ---
 
-## 7. 接下来要做（QA Round-4 起 / 毕设阶段长期项）
+## 7. 接下来要做（Round-4 已完成后的短期项）
 
-### 7.1 现状（2026-05-26）
+### 7.1 现状（2026-06-05）
 
-**Wave 1-4 已全部交付**（首版 tag `wave-4-end`），**QA 三轮已完成**：
+**Wave 1-4 已全部交付**（首版 tag `wave-4-end`），**QA 四轮已完成本地工程验证**：
 
 - First-round（2026-05-24）：45 用例 / 9 缺陷（3 P1 + 3 P2 + 3 P3），见 `docs/qa/first-round/`
 - Round-2（2026-05-25，commit `97e5be4`）：6 项关键缺陷修复（M-1 链上 verify / M-2 日志噪声 / M-3 中文乱码 / O-2 block_number / O-4 partial / B-1 Hyper-V 6379）
 - Round-3（2026-05-26，commit `891b645`）：5 项收尾（M-A skipTests / M-B Hyper-V 文档防御 / M-C 演示数据净化 / M-D 文档术语对齐 / M-E 测试基设完整）
+- Round-4（2026-06-05，待提交）：P1-002 业务单测补齐（10 类 / 75 tests）、JaCoCo 30% baseline、M-3 输入层防御、O-1 复审
 
 **演示就绪度 100%**，可立即彩排答辩。
 
-### 7.2 Round-4 / 毕设阶段长期项（多日，不阻断答辩）
+### 7.2 Round-4 工程验证结果
 
-| 优先级 | 项 | 估时 | 说明 |
-|---|---|---|---|
-| 高 | P1-002 业务模块单元测试源补齐 | 多日 | round-3 时间不足，留 round-4 |
-|   | - BatteryScanService（M-1 修复后逻辑必补单测） | 0.5d | |
-|   | - ContractInvoker.longOrNull（O-2 修复后逻辑） | 0.5d | |
-|   | - CarbonCalcService（GB-T 24067 5 阶段） | 1d | |
-|   | - OrderService / TradeInService（商城 + 以旧换新） | 1d | |
-|   | - 给业务测试加 `@Tag("dev")` 让 mvn test 默认能跑 | 0.5d | RuoYi surefire 按 `@Tag` 过滤 |
-| 中 | 引入 JaCoCo 覆盖率报告 + 基线阈值 30% | 0.5d | |
-| 中 | M-3 输入层防御：API 入参拒绝 `EFBFBD` 字节字符串 | 0.5d | 防止再次写入乱码 |
-| 低 | O-1（P3-001）重新评估：HTTP 401 规范化是否值得做 | 1h（评估） | round-2 决策跳过，避免破坏前端 axios 拦截器 |
+| 项 | 结果 |
+|---|---|
+| Maven 命令 | `mvn -pl nev-modules/nev-battery,nev-modules/nev-blockchain,nev-modules/nev-carbon,nev-modules/nev-marketplace -am test -DskipTests=false` |
+| 测试结果 | 10 个测试类 / 75 tests / 0 failure / 0 error / 0 skipped |
+| 覆盖率 | `nev-battery` 53.29%，`nev-blockchain` 44.50%，`nev-carbon` 32.92%，`nev-marketplace` 40.25%，target total 41.74% |
+| JaCoCo gate | 4 个目标 NEV 模块均通过 `LINE COVEREDRATIO >= 0.30` |
+| 输入层防御 | `NoReplacementChar` 拒绝 U+FFFD / `EFBFBD` 解码污染，关键 DTO/参数已覆盖 |
+| O-1 复审 | 保留 HTTP 200 + body `code=401/403` 设计，不做 HTTP status 改造 |
+
+注意：Round-4 历史 vibe run `20260528T123835Z-863b1823` 曾有 closeout 失败信号；现在可声明的是本地工程验证成功，不声明历史治理 run 完整全绿。
 
 ### 7.3 答辩前可选短期项
 
@@ -892,6 +892,7 @@ RuoYi 作者已预留 JDK 21 镜像，注释互换即可，零风险。
 - [ ] 合约设计 PDF（继承结构 + 6 EventType 时序）
 - [ ] 演示视频脚本 + 录制（5 角色 e2e 走完 + 公开扫码）
 - [ ] 触发一次 producer1 register 新电池验证 O-2 future write blockNumber 实时回写（会污染 demo 数据，需准备清理脚本）
+- [ ] Mockito inline mock maker 改显式 javaagent，消除 JDK 21 dynamic-agent warning（不影响当前测试通过）
 
 ### 7.4 历史交付清单（已归档）
 
@@ -899,7 +900,7 @@ RuoYi 作者已预留 JDK 21 镜像，注释互换即可，零风险。
 ～～Wave 2 D8-D14 区块链全套～～ ✓（tag `wave-2-end`，6 个子 tag）
 ～～Wave 3 D15-D21 商城+碳核算+换新～～ ✓（tag `wave-3-end`，7 个子 tag）
 ～～Wave 4 D22-D34 前端 shadcn-vue 全量重写 + e2e～～ ✓（tag `wave-4-end` 🏆）
-～～QA First-round / Round-2 / Round-3～～ ✓（演示就绪度 100%，commit `891b645`）
+～～QA First-round / Round-2 / Round-3 / Round-4～～ ✓（演示就绪度 100%，Round-4 本地工程验证 75 tests GREEN）
 
 > Wave 4 关键决策（D22 起放弃 plus-ui 改走 shadcn-vue）见 §5.8；
 > 原 D22-D34 详细任务表已并入历史归档，不再展开（详见 `docs/qa/README.md` 与各 Wave 子 tag commit history）。

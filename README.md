@@ -4,7 +4,7 @@
 > 5 角色端到端闭环 · 链上链下双写校验 · GB-T 24067 碳足迹 · 公开扫码溯源
 
 **状态**：🏆 首版交付完成（tag `wave-4-end`）— 后端 38 模块 + 前端 12 业务页 + 5 角色 e2e 全验证通过
-**QA**：✅ Round-3 收尾完毕（5/5 修复 GREEN · 演示就绪度 100%）— `docs/qa/round-3/` · 全景索引：[`docs/qa/README.md`](docs/qa/README.md)
+**QA**：✅ Round-4 本地工程验证完成（75 tests GREEN · JaCoCo 30% baseline 通过 · 演示就绪度 100%）— `docs/qa/round-4/` · 全景索引：[`docs/qa/README.md`](docs/qa/README.md)
 
 ---
 
@@ -319,7 +319,7 @@ pnpm dev
 
 ---
 
-## 开发路线（4 Wave / 共 34 天 + QA 三轮）
+## 开发路线（4 Wave / 共 34 天 + QA 四轮）
 
 | 阶段 | 日期 | 主题 | tag / commit |
 |---|---|---|---|
@@ -330,6 +330,7 @@ pnpm dev
 | QA Round 1 | 2026-05-24 | First-round 测试：45 用例 / 9 缺陷（3×P1 + 3×P2 + 3×P3） | `docs/qa/first-round/` |
 | QA Round 2 | 2026-05-25 | 6 项关键缺陷修复（链上 verify / block_number / 中文乱码 / 日志噪声 / 测试基设 partial） | `docs/qa/round-2/`（commit `97e5be4`） |
 | QA Round 3 | 2026-05-26 | 5 项收尾（skipTests 翻转 / Hyper-V 文档 / 演示数据净化 / 文档术语对齐 / 测试基设完整） | `docs/qa/round-3/`（commit `891b645`）✅ |
+| QA Round 4 | 2026-06-05 | P1-002 业务单测补齐 + JaCoCo 30% baseline + 输入层编码防御 + O-1 复审 | `docs/qa/round-4/` ✅ |
 
 每个 D 都有独立 tag（`wave-N-dNN-xxx`），共 29 个里程碑 tag。Wave 4 关键决策详见 `HANDOFF.md §5.8`，QA 全景见 [`docs/qa/README.md`](docs/qa/README.md)。
 
@@ -391,7 +392,7 @@ docker ps                              # 看 7-8 个容器 healthy
 
 ## 答辩前 TODO
 
-### 已清零（QA 三轮收尾，演示就绪度 100%）
+### 已清零（QA 四轮收尾，演示就绪度 100%）
 
 - [x] 链上 verifyEvent 全失败 → round-2 M-1 修复，`overallVerified=true`
 - [x] `block_number` 100% NULL → round-2 O-2 修复，22/22 回填
@@ -401,6 +402,10 @@ docker ps                              # 看 7-8 个容器 healthy
 - [x] Hyper-V 6379 端口陷阱 → round-3 M-B 三处同步 16379（README + .env + compose）
 - [x] README/HANDOFF 表名与路径术语 → round-3 M-D 统一 `nev_` 前缀 + 路径速查表
 - [x] 测试基础设施（Spring Context 加载） → round-3 M-E TagUnitTest 1/1 pass
+- [x] P1-002 业务模块单元测试源补齐 → round-4 R4-A，10 类 / 75 tests 全绿
+- [x] JaCoCo 覆盖率报告 + 基线阈值 30% → round-4 R4-B，4 个 NEV 模块全部通过
+- [x] M-3 输入层防御 → round-4 R4-C，关键 DTO/参数拒绝 U+FFFD / `EFBFBD` 解码污染
+- [x] O-1 HTTP 401 规范化复审 → round-4 R4-D，保留 body `code=401/403` 设计
 
 ### 仍待办（不阻断答辩，可彩排后补）
 
@@ -409,12 +414,10 @@ docker ps                              # 看 7-8 个容器 healthy
 - [ ] 合约设计 PDF（继承结构 + 6 EventType 时序）
 - [ ] 演示视频脚本 + 录制（5 角色 e2e 走完 + 公开扫码）
 
-### 长期项（round-4，多日，毕设阶段做）
+### 后续工程优化
 
-- [ ] P1-002 业务模块单元测试源补齐（BatteryScanService / CarbonCalcService / OrderService / TradeInService）
-- [ ] 引入 JaCoCo 覆盖率报告 + 基线阈值 30%
-- [ ] M-3 输入层防御：API 入参拒绝 `EFBFBD` 字节字符串
-- [ ] 给业务测试加 `@Tag("dev")` 让 `mvn test` 默认能跑到业务用例
+- [ ] Mockito inline mock maker 改为显式 javaagent，消除 JDK 21 dynamic-agent warning
+- [ ] 如需真正 HTTP status 401/403，对后端异常处理、前端 axios error 分支和第三方调用方做一次协调改造
 
 > QA 详细记录见 [`docs/qa/README.md`](docs/qa/README.md)。
 

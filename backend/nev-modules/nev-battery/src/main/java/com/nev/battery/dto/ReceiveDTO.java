@@ -1,5 +1,6 @@
 package com.nev.battery.dto;
 
+import com.nev.common.core.validate.encoding.NoReplacementChar;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -22,6 +23,7 @@ public class ReceiveDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @NotBlank(message = "溯源编号不能为空")
+    @NoReplacementChar
     private String traceNumber;
 
     /** SOH（State of Health）健康度 0-100% */
@@ -30,5 +32,6 @@ public class ReceiveDTO implements Serializable {
     @Max(value = 100, message = "SOH 不能大于 100")
     private Integer soh;
 
+    @NoReplacementChar
     private String remark;
 }

@@ -7,8 +7,10 @@ import com.nev.common.core.domain.R;
 import com.nev.marketplace.dto.OrderQueryDTO;
 import com.nev.marketplace.dto.OrderVO;
 import com.nev.marketplace.service.OrderService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author NEV-v2
  */
 @Slf4j
+@Validated
 @RestController
 @RequestMapping("/merchant/order")
 @RequiredArgsConstructor
@@ -31,7 +34,7 @@ public class MerchantOrderController {
 
     @SaCheckLogin @SaCheckRole("merchant")
     @GetMapping("/list")
-    public R<Page<OrderVO>> list(@ModelAttribute OrderQueryDTO q) {
+    public R<Page<OrderVO>> list(@Valid @ModelAttribute OrderQueryDTO q) {
         return R.ok(orderService.listMineMerchant(q));
     }
 

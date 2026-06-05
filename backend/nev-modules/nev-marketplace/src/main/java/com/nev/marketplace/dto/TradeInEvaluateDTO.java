@@ -1,5 +1,6 @@
 package com.nev.marketplace.dto;
 
+import com.nev.common.core.validate.encoding.NoReplacementChar;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -25,5 +26,6 @@ public class TradeInEvaluateDTO implements Serializable {
     @NotNull(message = "评估金额必填")
     private BigDecimal evaluatedAmount;
 
+    @NoReplacementChar
     private String summary;
 }

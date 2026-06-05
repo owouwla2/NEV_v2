@@ -51,6 +51,13 @@
             <groupId>com.nev</groupId>
             <artifactId>ruoyi-common-log</artifactId>
         </dependency>
+
+        <!-- NEV-v2 round-4 M-B: 单元测试栈 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 </project>

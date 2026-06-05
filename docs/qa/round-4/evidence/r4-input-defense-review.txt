@@ -1,0 +1,34 @@
+Round-4 M-3 input-layer defense review:
+
+Common validator:
+- NoReplacementChar
+- NoReplacementCharValidator
+
+Rejected value:
+- Unicode replacement character U+FFFD
+- U+FFFD is the decoded form of UTF-8 bytes EFBFBD
+
+Battery DTO fields:
+- BatteryRegisterDTO: traceNumber, model, serialNo, cellSupplier, cellType, bmsInfo
+- TransferInDTO: traceNumber, remark
+- SellDTO: traceNumber, orderNo, remark
+- ReceiveDTO: traceNumber, remark
+
+Marketplace DTO fields:
+- AddressDTO: recipient, phone, province, city, district, detail
+- OrderCreateDTO: remark, nested AddressDTO validated via @Valid
+- OrderQueryDTO: status
+- ProductQueryDTO: category, keyword
+- ProductSaveDTO: title, subtitle, category, description, status, images element type
+- TradeInEvaluateDTO: summary
+- TradeInSubmitDTO: oldBatteryTraceNumber, remark
+
+Controller activation:
+- ConsumerOrderController.list: @Valid @ModelAttribute OrderQueryDTO
+- MerchantOrderController.list: @Valid @ModelAttribute OrderQueryDTO
+- PublicProductController.list: @Valid @ModelAttribute ProductQueryDTO
+- ConsumerOrderController.cancel reason: @NoReplacementChar @RequestParam
+- ConsumerTradeInController.reject reason: @NoReplacementChar @RequestParam, controller @Validated
+
+Test evidence:
+- InputEncodingValidationTest: 5 tests, 0 failures

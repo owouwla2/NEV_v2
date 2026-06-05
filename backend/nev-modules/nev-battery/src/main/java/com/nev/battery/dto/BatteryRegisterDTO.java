@@ -1,5 +1,6 @@
 package com.nev.battery.dto;
 
+import com.nev.common.core.validate.encoding.NoReplacementChar;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -21,12 +22,15 @@ public class BatteryRegisterDTO implements Serializable {
 
     /** 溯源编号（业务唯一，前端通常按规则生成） */
     @NotBlank(message = "溯源编号不能为空")
+    @NoReplacementChar
     private String traceNumber;
 
     @NotBlank(message = "电池型号不能为空")
+    @NoReplacementChar
     private String model;
 
     @NotBlank(message = "电芯序列号不能为空")
+    @NoReplacementChar
     private String serialNo;
 
     @NotNull(message = "电池容量不能为空")
@@ -36,9 +40,12 @@ public class BatteryRegisterDTO implements Serializable {
 
     // ---- 规格快照（用于 dataHash 计算） ----
     /** 电芯供应商 */
+    @NoReplacementChar
     private String cellSupplier;
     /** 电芯类型（LFP/NCM/NCA） */
+    @NoReplacementChar
     private String cellType;
     /** BMS 信息 */
+    @NoReplacementChar
     private String bmsInfo;
 }

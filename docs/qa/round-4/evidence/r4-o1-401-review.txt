@@ -1,0 +1,15 @@
+O-1 / P3-001 HTTP 401 normalization review:
+
+Conclusion:
+Keep the current RuoYi-Vue-Plus / Sa-Token behavior:
+- HTTP status may remain 200 for business auth failures.
+- Response body carries code=401 or code=403.
+- Frontend axios interceptor reads body.code and routes to login / permission handling.
+
+Reason:
+Changing backend auth failures to HTTP 401/403 without a coordinated frontend interceptor rewrite can move axios into the non-2xx error branch and skip the existing body unwrap flow.
+
+Status:
+- Reviewed: yes
+- Code change: no
+- Risk accepted: third-party clients or gateways that require HTTP status 401/403 need an adapter or future coordinated change.

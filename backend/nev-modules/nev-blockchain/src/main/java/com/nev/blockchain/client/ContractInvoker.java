@@ -191,8 +191,10 @@ public class ContractInvoker {
      * NEV-v2 fix P2-002 / round-2 O-2:
      * WeBASE-Front 返回 blockNumber 既可能是数字 (140) 也可能是字符串 ("140") 甚至 hex ("0x8c")。
      * 兼容三种形态，提取 long；解析失败返回 null。
+     * NEV-v2 round-4 M-A: 由 private 放宽到 package-private 以便单元测试覆盖。
+     * 仅同包测试可见，外部 API 不变。
      */
-    private Long longOrNull(JsonNode node) {
+    Long longOrNull(JsonNode node) {
         if (node == null || node.isNull()) {
             return null;
         }

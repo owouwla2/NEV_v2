@@ -1,5 +1,6 @@
 package com.nev.battery.dto;
 
+import com.nev.common.core.validate.encoding.NoReplacementChar;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -20,6 +21,7 @@ public class TransferInDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @NotBlank(message = "溯源编号不能为空")
+    @NoReplacementChar
     private String traceNumber;
 
     /** 上一持有者 user_id（distributor 从谁手里接到的，通常 = 该电池的 producer_id 或 上一 distributor） */
@@ -27,5 +29,6 @@ public class TransferInDTO implements Serializable {
     private Long fromOwnerId;
 
     /** 备注 */
+    @NoReplacementChar
     private String remark;
 }

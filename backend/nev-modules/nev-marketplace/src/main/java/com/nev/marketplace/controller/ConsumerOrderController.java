@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nev.common.core.domain.R;
+import com.nev.common.core.validate.encoding.NoReplacementChar;
 import com.nev.marketplace.dto.OrderCreateDTO;
 import com.nev.marketplace.dto.OrderQueryDTO;
 import com.nev.marketplace.dto.OrderVO;
@@ -43,7 +44,7 @@ public class ConsumerOrderController {
 
     @SaCheckLogin @SaCheckRole("consumer")
     @GetMapping("/list")
-    public R<Page<OrderVO>> list(@ModelAttribute OrderQueryDTO q) {
+    public R<Page<OrderVO>> list(@Valid @ModelAttribute OrderQueryDTO q) {
         return R.ok(orderService.listMineConsumer(q));
     }
 
@@ -56,7 +57,7 @@ public class ConsumerOrderController {
     @SaCheckLogin @SaCheckRole("consumer")
     @PostMapping("/cancel/{orderId}")
     public R<Void> cancel(@PathVariable Long orderId,
-                          @RequestParam(required = false) String reason) {
+                          @NoReplacementChar @RequestParam(required = false) String reason) {
         orderService.cancel(orderId, reason);
         return R.ok();
     }
