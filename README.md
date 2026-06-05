@@ -4,7 +4,7 @@
 > 5 角色端到端闭环 · 链上链下双写校验 · GB-T 24067 碳足迹 · 公开扫码溯源
 
 **状态**：🏆 首版交付完成（tag `wave-4-end`）— 后端 38 模块 + 前端 12 业务页 + 5 角色 e2e 全验证通过
-**QA**：✅ Round-4 本地工程验证完成（75 tests GREEN · JaCoCo 30% baseline 通过 · 演示就绪度 100%）— `docs/qa/round-4/` · 全景索引：[`docs/qa/README.md`](docs/qa/README.md)
+**QA**：✅ Round-4 已闭环（75 tests GREEN · JaCoCo 30% baseline 通过 · Vibe closeout PASS · 演示就绪度 100%）— `docs/qa/round-4/` · 全景索引：[`docs/qa/README.md`](docs/qa/README.md)
 
 ---
 
@@ -330,7 +330,7 @@ pnpm dev
 | QA Round 1 | 2026-05-24 | First-round 测试：45 用例 / 9 缺陷（3×P1 + 3×P2 + 3×P3） | `docs/qa/first-round/` |
 | QA Round 2 | 2026-05-25 | 6 项关键缺陷修复（链上 verify / block_number / 中文乱码 / 日志噪声 / 测试基设 partial） | `docs/qa/round-2/`（commit `97e5be4`） |
 | QA Round 3 | 2026-05-26 | 5 项收尾（skipTests 翻转 / Hyper-V 文档 / 演示数据净化 / 文档术语对齐 / 测试基设完整） | `docs/qa/round-3/`（commit `891b645`）✅ |
-| QA Round 4 | 2026-06-05 | P1-002 业务单测补齐 + JaCoCo 30% baseline + 输入层编码防御 + O-1 复审 | `docs/qa/round-4/` ✅ |
+| QA Round 4 | 2026-06-05 | P1-002 业务单测补齐 + JaCoCo 30% baseline + 输入层编码防御 + O-1 复审 + Vibe closeout PASS | `docs/qa/round-4/`（commit `9882650` + `0270cd6`，tag `qa-round-4-complete`）✅ |
 
 每个 D 都有独立 tag（`wave-N-dNN-xxx`），共 29 个里程碑 tag。Wave 4 关键决策详见 `HANDOFF.md §5.8`，QA 全景见 [`docs/qa/README.md`](docs/qa/README.md)。
 
@@ -406,6 +406,7 @@ docker ps                              # 看 7-8 个容器 healthy
 - [x] JaCoCo 覆盖率报告 + 基线阈值 30% → round-4 R4-B，4 个 NEV 模块全部通过
 - [x] M-3 输入层防御 → round-4 R4-C，关键 DTO/参数拒绝 U+FFFD / `EFBFBD` 解码污染
 - [x] O-1 HTTP 401 规范化复审 → round-4 R4-D，保留 body `code=401/403` 设计
+- [x] Vibe closeout repair → session `20260605T113231Z-a5baa06b`，delivery acceptance = `PASS`
 
 ### 仍待办（不阻断答辩，可彩排后补）
 

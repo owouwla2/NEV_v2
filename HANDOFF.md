@@ -5,7 +5,7 @@
 >
 > **创建日期**：2026-05-15
 > **最后更新**：2026-06-05
-> **当前进度**：🏆 **首版交付完成**（tag `wave-4-end`）+ ✅ **QA 四轮收尾**（round-4 本地工程验证：75 tests GREEN · JaCoCo 30% baseline 通过 · 演示就绪度 100%）
+> **当前进度**：🏆 **首版交付完成**（tag `wave-4-end`）+ ✅ **QA 四轮收尾完成**（Round-4 75 tests GREEN · JaCoCo 30% baseline 通过 · Vibe closeout PASS · 最新远端 `0270cd6`）
 > **QA 全景**：[`docs/qa/README.md`](docs/qa/README.md)
 > **位置**：`E:/Study/IdeaProjects/NEV-v2/HANDOFF.md`
 
@@ -15,7 +15,7 @@
 
 ```
 我在做 NEV-v2 项目，一个基于区块链的新能源汽车动力电池全产业链溯源平台。
-项目状态：Wave 1 D1 已完成，准备开始 D2。
+项目状态：Wave 1-4 与 QA Round-1~4 已完成；Round-4 工程验证和 Vibe closeout 均已闭环，准备进入答辩材料 / 交付材料化阶段。
 
 请先读：
 1. E:/Study/IdeaProjects/NEV-v2/HANDOFF.md（必读，全部内容）
@@ -32,7 +32,7 @@
 - 遵循 canonical vibe 治理流程，重大动作前先 $vibe-want / $vibe-how / $vibe-do
 - 不归档老仓 NEV，按需对照参考
 
-读完后告诉我可以继续 Wave 1 D2。
+读完后告诉我可以继续答辩准备阶段。
 ```
 
 ---
@@ -635,11 +635,13 @@ WeBASE-Front 5002 本地私钥库：
 | `20260514T134803Z-053c7f3a` | requirement_doc（停止） | `$vibe` 重新做需求分析 | docs/requirements/2026-05-14-*.md |
 | `20260514T142916Z-fec5c2d3` | xl_plan（停止） | `$vibe-how` 排执行计划 | docs/plans/2026-05-14-*-execution-plan.md |
 
-### 3.2 vibe runtime 已知 bug（必须知道）
+### 3.2 vibe runtime 注意事项
 
-> ⚠️ `phase_cleanup` 阶段（即一气推到 `$vibe` 完整流程的最后阶段）有 PowerShell 桥工件持久化 bug，会在 `Wait-VibeArtifactSet` 处崩溃。
+> 历史记录：旧的 Round-4 run `20260528T123835Z-863b1823` 曾在 closeout / delivery acceptance 侧留下失败信号。
 >
-> **应对**：分段跑 `$vibe-want`（停在 requirement_doc）→ `$vibe-how`（停在 xl_plan）→ `$vibe-do`（plan_execute），不一气推到 phase_cleanup。
+> 当前状态：2026-06-05 已用 Python 3.11 优先环境重跑 closeout repair，session `20260605T113231Z-a5baa06b` 的 runtime gates 全过，delivery acceptance = `PASS`。
+>
+> **应对**：重大任务仍建议分段跑 `$vibe-want`（停在 requirement_doc）→ `$vibe-how`（停在 xl_plan）→ `$vibe-do`/`$vibe`（执行/清理），并在收尾时读取 `delivery-acceptance-report.json`，不要只看命令退出码。
 
 ### 3.3 canonical 启动命令模板（Windows PowerShell）
 
@@ -868,7 +870,8 @@ RuoYi 作者已预留 JDK 21 镜像，注释互换即可，零风险。
 - First-round（2026-05-24）：45 用例 / 9 缺陷（3 P1 + 3 P2 + 3 P3），见 `docs/qa/first-round/`
 - Round-2（2026-05-25，commit `97e5be4`）：6 项关键缺陷修复（M-1 链上 verify / M-2 日志噪声 / M-3 中文乱码 / O-2 block_number / O-4 partial / B-1 Hyper-V 6379）
 - Round-3（2026-05-26，commit `891b645`）：5 项收尾（M-A skipTests / M-B Hyper-V 文档防御 / M-C 演示数据净化 / M-D 文档术语对齐 / M-E 测试基设完整）
-- Round-4（2026-06-05，待提交）：P1-002 业务单测补齐（10 类 / 75 tests）、JaCoCo 30% baseline、M-3 输入层防御、O-1 复审
+- Round-4（2026-06-05，commit `9882650`，tag `qa-round-4-complete`）：P1-002 业务单测补齐（10 类 / 75 tests）、JaCoCo 30% baseline、M-3 输入层防御、O-1 复审
+- Round-4 governance closeout（2026-06-05，commit `0270cd6`）：Vibe session `20260605T113231Z-a5baa06b` 重新生成 delivery acceptance，结果 `PASS`
 
 **演示就绪度 100%**，可立即彩排答辩。
 
@@ -882,8 +885,10 @@ RuoYi 作者已预留 JDK 21 镜像，注释互换即可，零风险。
 | JaCoCo gate | 4 个目标 NEV 模块均通过 `LINE COVEREDRATIO >= 0.30` |
 | 输入层防御 | `NoReplacementChar` 拒绝 U+FFFD / `EFBFBD` 解码污染，关键 DTO/参数已覆盖 |
 | O-1 复审 | 保留 HTTP 200 + body `code=401/403` 设计，不做 HTTP status 改造 |
+| 工程提交 | `9882650`（tag `qa-round-4-complete`，已 push） |
+| 治理 closeout | `0270cd6`（session `20260605T113231Z-a5baa06b`，delivery acceptance = `PASS`，已 push） |
 
-注意：Round-4 历史 vibe run `20260528T123835Z-863b1823` 曾有 closeout 失败信号；现在可声明的是本地工程验证成功，不声明历史治理 run 完整全绿。
+注意：Round-4 历史 vibe run `20260528T123835Z-863b1823` 曾有 closeout 失败信号；不要追认该历史 run 本身全绿。当前可声明的治理闭环来自 closeout repair session `20260605T113231Z-a5baa06b`，其 delivery acceptance 已重新生成为 `PASS`。
 
 ### 7.3 答辩前可选短期项
 
@@ -900,7 +905,7 @@ RuoYi 作者已预留 JDK 21 镜像，注释互换即可，零风险。
 ～～Wave 2 D8-D14 区块链全套～～ ✓（tag `wave-2-end`，6 个子 tag）
 ～～Wave 3 D15-D21 商城+碳核算+换新～～ ✓（tag `wave-3-end`，7 个子 tag）
 ～～Wave 4 D22-D34 前端 shadcn-vue 全量重写 + e2e～～ ✓（tag `wave-4-end` 🏆）
-～～QA First-round / Round-2 / Round-3 / Round-4～～ ✓（演示就绪度 100%，Round-4 本地工程验证 75 tests GREEN）
+～～QA First-round / Round-2 / Round-3 / Round-4～～ ✓（演示就绪度 100%，Round-4 本地工程验证 75 tests GREEN，Vibe closeout PASS）
 
 > Wave 4 关键决策（D22 起放弃 plus-ui 改走 shadcn-vue）见 §5.8；
 > 原 D22-D34 详细任务表已并入历史归档，不再展开（详见 `docs/qa/README.md` 与各 Wave 子 tag commit history）。
@@ -1014,7 +1019,7 @@ ls -la "E:/Study/IdeaProjects/NEV-v2/"
 
 # 2. 验证 git 历史
 cd "E:/Study/IdeaProjects/NEV-v2" && git log --oneline
-# 应看到 4 个 commits，最新是 wave-1-d1-renamed 标签
+# 应看到最新 `0270cd6` 在 `origin/master`，工程 tag `qa-round-4-complete` 指向 `9882650`
 
 # 3. 验证编译可通过（必跑一次）
 cd "E:/Study/IdeaProjects/NEV-v2/backend" && mvn -pl ruoyi-admin -am compile -T 4 -q
@@ -1031,7 +1036,7 @@ ls "E:/Study/IdeaProjects/NEV/2026037462/" | head
 # - docs/reference/README.md
 ```
 
-完成上述检查后，Claude 应该说："已就位，可以从 Wave 1 D2 继续。"
+完成上述检查后，Claude 应该说："已就位，可以从答辩准备 / 交付材料化阶段继续。"
 
 ---
 
@@ -1066,11 +1071,11 @@ A：立刻 `git -C "E:/Study/IdeaProjects/NEV/" diff` 检查 + 还原。老仓�
 
 - **新对话框开场白**：见本文档 §0
 - **最新进度查询**：`cd "E:/Study/IdeaProjects/NEV-v2" && git log --oneline | head -10`
-- **下一步任务**：本文档 §7.1（Wave 1 D2）
+- **下一步任务**：本文档 §7.3（答辩前可选短期项）
 - **遇到问题先读**：本文档 §6（踩过的坑）
 
 ---
 
 > 本文档由 Claude 在 vibe session `20260514T142916Z-fec5c2d3` 之后的执行阶段编写。
 > 作为新对话框的"零损失续接"入口。
-> 当 Wave 1 D2 完成后，本文档应更新 §2、§7 章节，添加 D2 完成清单。
+> 当前接续点：Wave 1-4 与 QA Round-1~4 已完成；后续更新应聚焦 §7 的答辩材料、交付材料和可选工程清理。

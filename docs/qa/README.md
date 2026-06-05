@@ -2,7 +2,7 @@
 
 > 本目录归档项目所有测试质量保障产物。按"轮次（round）"组织：每轮独立目录，自带 fix-log + test-report + evidence 三件套。
 >
-> **当前状态**：✅ Round-4 本地工程验证完成：目标 NEV 模块 75 tests 全绿，JaCoCo 30% line coverage baseline 已强制通过；演示就绪度保持 100%。
+> **当前状态**：✅ Round-4 已闭环：目标 NEV 模块 75 tests 全绿，JaCoCo 30% line coverage baseline 已强制通过，Vibe closeout delivery acceptance 已重新生成为 PASS；`master` 已同步到 `0270cd6`，演示就绪度保持 100%。
 
 ---
 
@@ -13,7 +13,7 @@
 | First-round | 2026-05-24 | (在 docs 提交链中) | 45 用例 / 9 缺陷分级 | ✅ 完成 |
 | Round-2 | 2026-05-25 | `97e5be4` | 6 项关键修复 + 1 项决策跳过 | ✅ 完成 |
 | Round-3 | 2026-05-26 | `891b645` | 5 项收尾修复（5/5 GREEN） | ✅ 完成 |
-| Round-4 | 2026-06-05 | （待提交） | 75 tests + JaCoCo 30% + 输入层防御 + O-1 复审 | ✅ 工程验证完成 |
+| Round-4 | 2026-06-05 | `9882650` + `0270cd6` | 75 tests + JaCoCo 30% + 输入层防御 + O-1 复审 + governance closeout | ✅ 完成 |
 
 ---
 
@@ -124,6 +124,8 @@
 
 **目录**：[`round-4/`](round-4/)
 **工程收尾**：2026-06-05
+**工程提交**：`9882650`（tag `qa-round-4-complete`）
+**治理 closeout**：`0270cd6` / session `20260605T113231Z-a5baa06b`，delivery acceptance = `PASS`
 **验证命令**：`mvn -pl nev-modules/nev-battery,nev-modules/nev-blockchain,nev-modules/nev-carbon,nev-modules/nev-marketplace -am test -DskipTests=false`
 
 | 文件 | 用途 |
@@ -165,11 +167,11 @@
 | First-round | `20260524T103530Z-*`（首轮治理） | `docs/plans/2026-05-24-*-execution-plan.md` |
 | Round-2 | `20260524T115714Z-9fddb02e` | `docs/qa/round-2/fix-log.md` 头部 |
 | Round-3 | `20260526T010924Z-3dc8e66a` | `docs/plans/2026-05-26-*-execution-plan.md` |
-| Round-4 | `20260528T123835Z-863b1823` | `docs/requirements/2026-05-28-...round-4...md` + `docs/plans/2026-05-28-...round-4...md` |
+| Round-4 | `20260528T123835Z-863b1823`（历史工程 run） + `20260605T113231Z-a5baa06b`（closeout repair PASS） | `docs/requirements/2026-05-28-...round-4...md` + `docs/plans/2026-05-28-...round-4...md`；closeout 文档见 `docs/requirements/2026-06-05-...governance-closeout...md` + `docs/plans/2026-06-05-...governance-closeout...md` |
 
 所有 vibe session 产物归档在 `outputs/runtime/vibe-sessions/{session_id}/`。
 
-Round-4 的历史治理 run 曾出现 closeout/delivery acceptance 侧的失败信号；本索引只声明 2026-06-05 的**本地工程验证成功**，不把该历史 run 追认为 canonical governance 全绿。
+Round-4 的历史治理 run `20260528T123835Z-863b1823` 曾出现 closeout/delivery acceptance 侧的失败信号；该失败不追认为全绿。后续 closeout repair session `20260605T113231Z-a5baa06b` 已重新执行 runtime gates，`delivery-acceptance-report.json` 为 `PASS`，作为当前治理闭环依据。
 
 ---
 
@@ -183,13 +185,14 @@ Round-4 的历史治理 run 曾出现 closeout/delivery acceptance 侧的失败�
 - "JaCoCo 已引入，4 个目标 NEV 模块均通过 30% line coverage baseline"
 - "M-3 输入层防御已加：关键 DTO/参数拒绝 U+FFFD / `EFBFBD` 解码污染"
 - "O-1 已复审，决策保留当前 HTTP 200 + body `code=401/403` 模型"
+- "Round-4 governance closeout 已修复：session `20260605T113231Z-a5baa06b` 的 delivery acceptance = `PASS`，两个 runtime gate 均通过"
 - "测试基础设施可用，SpringBootTest 上下文可成功加载"
 - "答辩演示数据净化完毕，演示就绪度 100%"
 
 ❌ **不可声明**：
 
 - "HTTP 鉴权错误实际 status 已规范化为 401/403" — O-1 是 review-only 保留现状
-- "Round-4 历史 vibe run 已完整治理成功" — 本轮只声明工程验证成功
+- "Round-4 历史 vibe run `20260528T123835Z-863b1823` 本身已完整治理成功" — 历史 run 失败过；当前治理闭环来自 `20260605T113231Z-a5baa06b`
 - "零文档债务" — 仍有部分上游 RuoYi-Vue-Plus 文档与代码不一致（不在本项目范围）
 
 ---
