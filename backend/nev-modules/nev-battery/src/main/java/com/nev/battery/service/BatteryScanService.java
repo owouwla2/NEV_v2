@@ -61,16 +61,25 @@ public class BatteryScanService {
             .orderByAsc(NevBatteryLifecycleDO::getVersion);
         List<NevBatteryLifecycleDO> lcList = lifecycleMapper.selectList(lcQ);
 
-        // 3. 取链上事件总数（不含 PRODUCED，PRODUCED 走 registerBattery 单独存）
+        // 3. 读取链上事件数。旧数据可能不含 PRODUCED，新注册数据可能包含 PRODUCED。
         Integer chainEventCount = queryChainEventCount(traceNumber);
+        boolean chainContainsProduced = chainEventCount != null && chainEventCount == lcList.size();
+        int chainVersionOffset = chainContainsProduced ? 0 : 1;
 
         // 4. 每条事件链上校验
-        //    NEV-v2 fix P1-001 / round-2 M-1: verifyOnChain 根据 event_type 分流到 verifyBattery / verifyEvent
         List<BatteryScanVO.EventItem> items = new ArrayList<>(lcList.size());
         int verified = 0;
         for (NevBatteryLifecycleDO lc : lcList) {
-            boolean ok = verifyOnChain(traceNumber, lc.getEventType(), lc.getVersion(), lc.getDataHash());
-            if (ok) verified++;
+            boolean ok = verifyOnChain(
+                traceNumber,
+                lc.getEventType(),
+                lc.getVersion(),
+                lc.getDataHash(),
+                chainVersionOffset
+            );
+            if (ok) {
+                verified++;
+            }
             items.add(BatteryScanVO.EventItem.builder()
                 .version(lc.getVersion())
                 .eventType(lc.getEventType())
@@ -85,13 +94,13 @@ public class BatteryScanService {
                 .build());
         }
 
-        // 5. 全局校验
-        //    NEV-v2 fix P1-001 / round-2 M-1: 链上 events 数组不含 PRODUCED，所以期望 chainEventCount + 1 = lcList.size()
-        //    （前提：第一条事件必须是 PRODUCED；若无 PRODUCED 则按 chainEventCount == lcList.size() 兜底）
-        boolean hasProduced = !lcList.isEmpty() && "PRODUCED".equalsIgnoreCase(lcList.get(0).getEventType());
-        int expectedChainCount = hasProduced ? lcList.size() - 1 : lcList.size();
-        boolean overallOk = (verified == lcList.size())
-            && (chainEventCount == null || chainEventCount == expectedChainCount);
+        // 5. 兼容两种历史数据形态：链上事件数等于链下总数，或少一个 PRODUCED。
+        boolean hasProduced = !lcList.isEmpty()
+            && "PRODUCED".equalsIgnoreCase(lcList.get(0).getEventType());
+        boolean countMatches = chainEventCount == null
+            || chainEventCount == lcList.size()
+            || (hasProduced && chainEventCount == lcList.size() - 1);
+        boolean overallOk = verified == lcList.size() && countMatches;
 
         // 碳足迹（如果 nev-carbon 模块加载且电池已计算）
         com.nev.battery.api.CarbonSummary carbon = null;
@@ -130,31 +139,33 @@ public class BatteryScanService {
         }
     }
 
-    /**
-     * 链上事件校验（NEV-v2 fix P1-001 / round-2 M-1）
-     *
-     * 业务事实：MySQL lifecycle.version 从 1 起包含 PRODUCED；链上 LifecycleTrace.events 数组只记录 addEvent
-     * 调用（IN_USE / SOLD / REPAIRED / RECYCLED / DISMANTLED），PRODUCED 走 registerBattery 单独存。
-     * 所以：
-     *   - PRODUCED → 调 verifyBattery(traceNumber, dataHash)
-     *   - 其它    → 调 verifyEvent(traceNumber, mysql_version - 1, dataHash)
-     *
-     * 详见 docs/qa/first-round/defects.md P1-001 + docs/qa/round-2/fix-log.md
-     */
-    private boolean verifyOnChain(String traceNumber, String eventType, Integer mysqlVersion, String dataHash) {
+    private boolean verifyOnChain(
+        String traceNumber,
+        String eventType,
+        Integer mysqlVersion,
+        String dataHash,
+        int chainVersionOffset
+    ) {
         try {
             boolean isProduced = "PRODUCED".equalsIgnoreCase(eventType);
             String func = isProduced ? "verifyBattery" : "verifyEvent";
             List<Object> params = isProduced
                 ? List.of(traceNumber, dataHash)
-                : List.of(traceNumber, mysqlVersion - 1, dataHash);
+                : List.of(traceNumber, mysqlVersion - chainVersionOffset, dataHash);
             ChainCallResult r = contractInvoker.query(CONTRACT_NAME, func, params);
             if (!r.isSuccess() || r.getOutput() == null) {
                 return false;
             }
             return parseBool(r.getOutput());
         } catch (Exception e) {
-            log.warn("[scan] verifyOnChain 异常 trace={} type={} v={}: {}", traceNumber, eventType, mysqlVersion, e.getMessage());
+            log.warn(
+                "[scan] verifyOnChain 异常 trace={} type={} v={} offset={}: {}",
+                traceNumber,
+                eventType,
+                mysqlVersion,
+                chainVersionOffset,
+                e.getMessage()
+            );
             return false;
         }
     }

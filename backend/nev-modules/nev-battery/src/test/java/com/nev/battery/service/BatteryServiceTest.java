@@ -77,6 +77,21 @@ class BatteryServiceTest {
     }
 
     @Test
+    @DisplayName("recordSoldByMerchant: 已售出电池拒绝重复销售")
+    void soldBatteryRejectsDuplicateMarketplaceSale() {
+        when(batteryMapper.selectOne(any())).thenReturn(battery("BAT-001", "SOLD"));
+
+        assertThatThrownBy(() -> service.recordSoldByMerchant(
+            "BAT-001", 201L, "0xMERCHANT", "ORD-002", 105L))
+            .isInstanceOf(ServiceException.class)
+            .hasMessageContaining("已售出");
+
+        verify(contractInvoker, never()).invokeAs(any(), any(), any(), any());
+        verify(lifecycleMapper, never()).insert(any(NevBatteryLifecycleDO.class));
+        verify(batteryMapper, never()).updateById(any(NevBatteryDO.class));
+    }
+
+    @Test
     @DisplayName("recordRecycledByTradeIn: soh=null 时按 0 上链并写 RECYCLED")
     @SuppressWarnings("unchecked")
     void recordRecycledByTradeInUsesZeroWhenSohMissing() {

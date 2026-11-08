@@ -319,6 +319,9 @@ public class BatteryService {
         if ("DISMANTLED".equals(battery.getCurrentStatus())) {
             throw new ServiceException("电池 [{}] 已报废拆解，不能继续操作", traceNumber);
         }
+        if ("SOLD".equals(eventType) && "SOLD".equals(battery.getCurrentStatus())) {
+            throw new ServiceException("电池 [{}] 已售出，不能重复销售", traceNumber);
+        }
 
         Date now = new Date();
 
