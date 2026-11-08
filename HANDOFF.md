@@ -4,8 +4,8 @@
 > 新对话框只需要让 Claude 先读完本文档，就能无损接上之前的所有进度、约定、踩过的坑。
 >
 > **创建日期**：2026-05-15
-> **最后更新**：2026-06-05
-> **当前进度**：🏆 **首版交付完成**（tag `wave-4-end`）+ ✅ **QA 四轮收尾完成**（Round-4 75 tests GREEN · JaCoCo 30% baseline 通过 · Vibe closeout PASS · 最新远端 `0270cd6`）
+> **最后更新**：2026-11-08
+> **当前进度**：🏆 **首版交付完成**（tag `wave-4-end`）+ ✅ **QA 四轮收尾完成**（Round-4 75 tests GREEN · JaCoCo 30% baseline 通过 · Vibe closeout PASS）+ 🔧 **扫码校验兼容 + 重复销售保护修复**（本轮工作区，见 §7.6）
 > **QA 全景**：[`docs/qa/README.md`](docs/qa/README.md)
 > **位置**：`E:/Study/IdeaProjects/NEV-v2/HANDOFF.md`
 
@@ -890,7 +890,21 @@ RuoYi 作者已预留 JDK 21 镜像，注释互换即可，零风险。
 
 注意：Round-4 历史 vibe run `20260528T123835Z-863b1823` 曾有 closeout 失败信号；不要追认该历史 run 本身全绿。当前可声明的治理闭环来自 closeout repair session `20260605T113231Z-a5baa06b`，其 delivery acceptance 已重新生成为 `PASS`。
 
-### 7.3 答辩前可选短期项
+### 7.3 扫码校验兼容 + 重复销售保护修复（2026-11-08 本轮）
+
+在两个真实业务回归中发现并修复两处缺陷：
+
+| 项 | 变更文件 | 说明 |
+|---|---|---|
+| **扫码链上校验兼容** | `nev-battery` `BatteryScanService.java` | 链上 `events` 数组可能**含或不含** `PRODUCED`（`registerBattery` 单独存），按链上事件数动态计算 `chainVersionOffset`（含则 0、不含则 1），`verifyEvent` 版本号据此偏移；`overallOk` 同时接受 `chainEventCount == lcList.size()` 与 `hasProduced && chainEventCount == lcList.size() - 1` 两种历史形态 |
+| **重复销售保护** | `nev-battery` `BatteryService.java` | 电池当前状态已为 `SOLD` 时再次触发商城销售，直接抛 `ServiceException`（"电池 [xxx] 已售出，不能重复销售"），不新增生命周期记录 / 不发链上交易 / 不重复发碳积分 |
+| **单元测试** | `nev-battery` `BatteryServiceTest.java` | 新增 `soldBatteryRejectsDuplicateMarketplaceSale` 覆盖重复销售拒绝分支 |
+
+回归验证（`BAT-E2E-20261013-001` / `BAT-DEMO-001` / `BAT-DEMO-002`）：`overallVerified=true`，事件校验 `4/4`、`4/4`、`6/6`。
+
+> 注：本批改动仍在工作区（未提交），提交后请回填 commit hash。历史演示数据中已存在的重复 `SOLD` 记录未删除，仅对后续新写入生效；如需清理另议。
+
+### 7.4 答辩前可选短期项
 
 - [ ] SpringDoc `@Operation` 注解补全（业务接口约 30 个）
 - [ ] ER 图（从 schema SQL 自动生成）
@@ -899,7 +913,7 @@ RuoYi 作者已预留 JDK 21 镜像，注释互换即可，零风险。
 - [ ] 触发一次 producer1 register 新电池验证 O-2 future write blockNumber 实时回写（会污染 demo 数据，需准备清理脚本）
 - [ ] Mockito inline mock maker 改显式 javaagent，消除 JDK 21 dynamic-agent warning（不影响当前测试通过）
 
-### 7.4 历史交付清单（已归档）
+### 7.5 历史交付清单（已归档）
 
 ～～Wave 1 D1-D7 全部交付～～ ✓（tag `wave-1-end`）
 ～～Wave 2 D8-D14 区块链全套～～ ✓（tag `wave-2-end`，6 个子 tag）
@@ -910,7 +924,7 @@ RuoYi 作者已预留 JDK 21 镜像，注释互换即可，零风险。
 > Wave 4 关键决策（D22 起放弃 plus-ui 改走 shadcn-vue）见 §5.8；
 > 原 D22-D34 详细任务表已并入历史归档，不再展开（详见 `docs/qa/README.md` 与各 Wave 子 tag commit history）。
 
-### 7.5 Wave 4 工程栈（参考用，已落地）
+### 7.6 Wave 4 工程栈（参考用，已落地）
 
 | 项 | 选择 |
 |---|---|
