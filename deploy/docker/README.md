@@ -47,10 +47,15 @@ rm -rf volumes/                  # 真正清除数据
 
 ## 数据库初始化
 
-**首选：自动导入（2026-11-09 起已生效）**。6 个 SQL 已按序号放入 `volumes/mysql/init/`
-（01 基础表 → 02 调度表 → 03 业务表 → 04 链上绑定 → 05 种子 → 06 演示种子），由 `backend/script/sql/`
-同步而来（`.gitignore` 已放行该目录）。首次启动（空 `volumes/mysql/data/`）时 docker-entrypoint
-按序号顺序自动执行，实测导入约 68 张表。schema 变更后需重新同步到 init/。
+ **首选：自动导入（2026-11-09 起已生效）**。6 个 SQL 已按序号放入 `volumes/mysql/init/`
+ （01 基础表 → 02 调度表 → 03 业务表 → 04 种子 → 05 演示种子 → 06 链上绑定），由 `backend/script/sql/`
+ 同步而来（`.gitignore` 已放行该目录）。首次启动（空 `volumes/mysql/data/`）时 docker-entrypoint
+ 按序号顺序自动执行，实测导入约 68 张表。schema 变更后需重新同步到 init/。
+
+ > **顺序注意**：`06_nev_v2_d11_chain_binding.sql` 必须在 `05_nev_v2_seed_demo.sql` **之后**执行——
+ > 它对 `sys_nev_user_ext` 做 UPDATE 回填真实钱包地址，而 demo 用户行由 05 才插入；
+ > 若绑链脚本先跑，UPDATE 落空，钱包会停留在 `0x101...` 占位值，链上调用报
+ > `user's privateKey is null`（2026-11-09 实测踩坑）。该脚本可随时单独重跑补绑。
 
 > 每个脚本头部都带 `SET NAMES utf8mb4;`：容器内 mysql 客户端默认会话字符集为 latin1，
 > 会导致中文按字节膨胀、触发 `Data too long for column 'nick_name'` 中断（2026-11-09 实测踩坑）。
@@ -70,17 +75,17 @@ docker exec -i nev-v2-mysql mysql -uroot -pnev_v2_root_2026 nev_v2 \
 docker exec -i nev-v2-mysql mysql -uroot -pnev_v2_root_2026 nev_v2 \
   < ../../backend/script/sql/nev_v2_business.sql
 
-# 4. 链上合约地址绑定（可重跑）
-docker exec -i nev-v2-mysql mysql -uroot -pnev_v2_root_2026 nev_v2 \
-  < ../../backend/script/sql/nev_v2_d11_chain_binding.sql
+ # 4. 业务角色 + 菜单种子
+ docker exec -i nev-v2-mysql mysql -uroot -pnev_v2_root_2026 nev_v2 \
+   < ../../backend/script/sql/nev_v2_seed.sql
 
-# 5. 业务角色 + 菜单种子
-docker exec -i nev-v2-mysql mysql -uroot -pnev_v2_root_2026 nev_v2 \
-  < ../../backend/script/sql/nev_v2_seed.sql
+ # 5. 演示种子（6 demo 用户 + 排放因子库 + 商品分类字典）
+ docker exec -i nev-v2-mysql mysql -uroot -pnev_v2_root_2026 nev_v2 \
+   < ../../backend/script/sql/nev_v2_seed_demo.sql
 
-# 6. 演示种子（6 demo 用户 + 排放因子库 + 商品分类字典）
-docker exec -i nev-v2-mysql mysql -uroot -pnev_v2_root_2026 nev_v2 \
-  < ../../backend/script/sql/nev_v2_seed_demo.sql
+ # 6. 链上合约地址绑定（必须最后执行：回填 demo 用户真实钱包，可重跑）
+ docker exec -i nev-v2-mysql mysql -uroot -pnev_v2_root_2026 nev_v2 \
+   < ../../backend/script/sql/nev_v2_d11_chain_binding.sql
 
 # 验证（应看到约 68 张表：sys_* / sj_* / nev_*）
 docker exec -i nev-v2-mysql mysql -uroot -pnev_v2_root_2026 -e "SHOW TABLES;" nev_v2
