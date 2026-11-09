@@ -213,7 +213,7 @@ private Long batteryId;
 ## 8. 配置 / 启动顺序依赖
 
 ```
-docker-compose up -d        # MySQL + Redis 起来
+docker compose up -d        # MySQL(13306) + Redis(16379) 起来
         │
         ▼
 backend mvn spring-boot:run
@@ -228,7 +228,7 @@ backend mvn spring-boot:run
         └── ready @ :9280
         │
         ▼
-admin-web pnpm dev          # :8120，proxy /api → :9280
+admin-web pnpm dev --host 127.0.0.1   # :8120（本机 IPv6 环回损坏，需显式 IPv4），proxy /auth /system 等 → :9280
 ```
 
 **幂等保证**：`ContractRegistryBootstrap` 在重启时检查链上 `getRole(addr)` 已 ≠ NONE 就跳过 `grantRole`，重启 1000 次不会反复发送授权交易。

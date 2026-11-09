@@ -250,26 +250,44 @@ NEV-v2/
 
 ### 1. 启动基础设施
 
+> Docker Desktop 没启动就先启动它（引擎就绪约 30-60s，`docker info` 能返回 Server Version 即可）。
+
 ```bash
 cd deploy/docker
-docker-compose up -d
-# 等到 nev-v2-mysql 健康检查通过（~15s）
+docker compose up -d
+docker compose ps        # 等 nev-v2-mysql / nev-v2-redis 变 (healthy)，约 15s
 ```
 
-MySQL 初始化 SQL 会通过 `volumes/mysql/init/*.sql` 自动导入：RuoYi 基础表 + 7 角色 sys_user / sys_role + 业务表（`nev_battery` / `nev_battery_lifecycle` / `nev_product` / `nev_cart` / `nev_order` / `nev_trade_in_request` / `nev_carbon_*`）。所有业务表统一带 `nev_` 前缀。
+> **✅ 全新环境自动建表（2026-11-09 修复并实测）**：6 个 SQL 已按序号放入 `volumes/mysql/init/`
+> （01 基础表 → 02 调度表 → 03 业务表 → 04 链上绑定 → 05 种子 → 06 演示种子），且每个文件头部
+> 加了 `SET NAMES utf8mb4;`——修复 docker-entrypoint 会话字符集为 latin1 导致中文按字节膨胀、
+> 触发 `Data too long for column 'nick_name'` 中断的问题。首次启动（空 `volumes/mysql/data/`）
+> 自动导入约 68 张表；`data/` 已有历史数据（本机现状）则跳过导入。手动导入兜底见
+> [`deploy/docker/README.md`](deploy/docker/README.md)。
 
 ### 2. 启动后端
 
 ```bash
 cd backend
-# 首次先把所有模块装到本地 m2（约 1-3 分钟，仅首次或 pom 改了之后）
-mvn -pl ruoyi-admin -am install -DskipTests
+# 首次或 pom 变更后：37 个模块全量 install（约 2-4 分钟）
+# -Djacoco.skip=true → 跳过覆盖率门禁（陷阱②）；正式跑测试时不要加
+mvn -Djacoco.skip=true -pl ruoyi-admin -am install -DskipTests
 
 # 进 ruoyi-admin 子目录启动（spring-boot-maven-plugin 只在子模块声明）
 cd ruoyi-admin
 mvn spring-boot:run
 # 日志出现 "Started NevApplication" 即就绪，监听 :9280
 ```
+
+> **✅ 陷阱① Maven 本地仓库错位（2026-11-09 已修复）**：`~/.m2/settings.xml` 把 `<localRepository>` 指到
+> `E:\Environment\m2-repo`（E 盘迁移是有意为之，避免 C 盘膨胀），但该仓库此前只有失败缓存，完整依赖在
+> C 盘默认仓库，导致命令行 mvn 报 `Non-resolvable import POM: com.nev:ruoyi-common-bom`。已把私有模块
+> `com/nev`（144 文件）镜像到 E 盘并全量补齐第三方依赖，`mvn validate` 验证通过——命令行开箱即用，无需任何参数。
+>
+> **⚠️ 陷阱② JaCoCo 残留 exec**：`-DskipTests` 下模块没有新覆盖率数据，若 `target/` 残留上次跑测试的
+> `jacoco.exec`，`jacoco:check` 会拿旧数据评估导致 install 失败（`Coverage checks have not been met`）。
+> 快速启动统一加 `-Djacoco.skip=true`；清残留：`Get-ChildItem backend -Recurse -Filter jacoco.exec | Remove-Item -Force`。
+> 正式跑测试（不带 `-DskipTests`）时不要加 skip，30% 覆盖率门禁仍生效。
 
 > **PowerShell 跑会中文乱码**：因为 PS 默认 GBK (936) 控制台 vs Spring Boot UTF-8 日志。启动前先切 UTF-8 代码页：
 > ```powershell
@@ -293,10 +311,14 @@ mvn spring-boot:run
 
 ```bash
 cd apps/admin-web
-pnpm install
-pnpm dev
-# 监听 http://localhost:8120，已配 proxy → :9280
+pnpm install          # 首次
+pnpm dev --host 127.0.0.1
+# 监听 http://localhost:8120，已配 proxy（/auth /system 等）→ :9280
 ```
+
+> **⚠️ 陷阱③ 本机 IPv6 环回损坏（2026-11-09 实测）**：本机 `[::1]` 上的端口能 LISTEN 但 TCP 连不上，
+> vite 默认绑 `localhost`（Node 解析到 `::1`）导致浏览器/curl 全部连接被拒。必须显式 `--host 127.0.0.1`；
+> 浏览器访问 `localhost:8120` 会自动回落 IPv4，实测正常。vite 的后端代理转发不受影响（Node 侧正常）。
 
 ### 4. 演示登录
 
