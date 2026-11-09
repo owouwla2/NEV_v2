@@ -11,7 +11,7 @@ const userStore = useUserStore()
 const stats = ref({
   batteryCount: 0,
   orderCount: 0,
-  totalCarbon: 0,
+   totalCarbon: '0',
   chainEvents: 0,
 })
 
@@ -19,15 +19,25 @@ interface ProductPage {
   total: number
 }
 
-onMounted(async () => {
-  // 仅 demo 用：拉公开商品总数（拿 total 字段）
-  try {
-    const r = await http<ProductPage>('/public/product/list?pageNum=1&pageSize=1')
-    stats.value.orderCount = r?.total ?? 0
-  } catch (e) {
-    // ignore
-  }
-})
+ interface DashboardStats {
+   batteryCount: number
+   carbonIssued: string
+   chainEventCount: number
+ }
+
+ onMounted(async () => {
+   // 商品总数：公开商品列表 total；其余三项：/public/dashboard/stats（替换原 D24 接入占位）
+   const [product, stat] = await Promise.allSettled([
+     http<ProductPage>('/public/product/list?pageNum=1&pageSize=1'),
+     http<DashboardStats>('/public/dashboard/stats'),
+   ])
+   if (product.status === 'fulfilled') stats.value.orderCount = product.value?.total ?? 0
+   if (stat.status === 'fulfilled' && stat.value) {
+     stats.value.batteryCount = stat.value.batteryCount ?? 0
+     stats.value.totalCarbon = stat.value.carbonIssued ?? '0'
+     stats.value.chainEvents = stat.value.chainEventCount ?? 0
+   }
+ })
 </script>
 
 <template>
@@ -57,7 +67,7 @@ onMounted(async () => {
           <Battery class="size-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold">D24 接</div>
+           <div class="text-2xl font-bold">{{ stats.batteryCount }}</div>
           <p class="text-xs text-muted-foreground mt-1">nev_battery 总数</p>
         </CardContent>
       </Card>
@@ -67,8 +77,8 @@ onMounted(async () => {
           <Leaf class="size-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold">D24 接</div>
-          <p class="text-xs text-muted-foreground mt-1">∑ totalEarned kgCO2eq</p>
+           <div class="text-2xl font-bold">{{ stats.totalCarbon }}</div>
+           <p class="text-xs text-muted-foreground mt-1">累计发放 kgCO2eq</p>
         </CardContent>
       </Card>
       <Card>
@@ -77,8 +87,8 @@ onMounted(async () => {
           <Link2 class="size-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold">D24 接</div>
-          <p class="text-xs text-muted-foreground mt-1">LifecycleEventAdded count</p>
+           <div class="text-2xl font-bold">{{ stats.chainEvents }}</div>
+           <p class="text-xs text-muted-foreground mt-1">nev_battery_lifecycle 事件总数</p>
         </CardContent>
       </Card>
     </div>
