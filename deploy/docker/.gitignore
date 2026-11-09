@@ -1,2 +1,6 @@
 .env
-volumes/
+volumes/*
+!volumes/
+!volumes/mysql
+volumes/mysql/*
+!volumes/mysql/init
