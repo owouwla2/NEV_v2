@@ -217,7 +217,7 @@ onMounted(loadList)
             <ShoppingCart class="size-6" /> 商品浏览
           </h1>
           <p class="text-sm text-muted-foreground mt-1">
-            浏览全平台在售商品；consumer 角色可加入购物车（D26）
+            浏览全平台在售商品；consumer 角色可加入购物车
           </p>
         </div>
         <div class="flex items-center gap-2">

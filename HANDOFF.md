@@ -944,6 +944,37 @@ RuoYi 作者已预留 JDK 21 镜像，注释互换即可，零风险。
 
 ---
 
+### 7.7 演示就绪整备（2026-11-09 本轮）
+
+**乱码根因与修复**：
+- 用户截图的"欢迎回来/工作台"卡片页是**旧版界面**（当前 DashboardView 已重写，实况无乱码）。
+- 但运行库确有真乱码：旧 E2E 测试经 GBK 连接写入的字节垃圾（nev_product 商品名 / nev_order 地址 / nev_order_item 快照 / nev_trade_in_request 备注），页面上显示 `�`。
+- 修复：用带 `SET NAMES utf8mb4` 的 6 个 SQL **全量重导运行库**（68 表），复检 0 乱码特征；顺带消除 sys_menu"流程达式"缺字。
+
+**本轮提交**：
+| commit | 内容 |
+|---|---|
+| `0f20c57` | fix(deploy): init SQL 重排——d11 钱包绑定必须在 seed_demo 之后（否则钱包停留 `0x101...` 占位值，链上调用报 `user's privateKey is null`） |
+| `d24804a` | feat(dashboard): 仪表盘统计卡接入真实数据（新增 `GET /public/dashboard/stats`），替换"D24 接"占位 |
+
+**演示数据（全 API + 链上双写，trace 前缀 `NEV-DEMO-1109-`）**：
+- 电池 ×4（producer1 注册上链，block 176-182）：001/003 已 RECYCLED（换新链路）、002 已 SOLD+评估待接受、004 商城链 SOLD
+- 事件 13 条 = PRODUCED×4 + IN_USE×3 + SOLD×3(零售) + SOLD×1(商城) + RECYCLED×2；公开扫码 `overallVerified=true` 全通过
+- 商品 ×3（merchant1；电池包绑定 004）、订单 ×3（COMPLETED/PAID/PENDING）、换新 ×3（2 COMPLETED + 1 EVALUATED）
+- consumer1 碳积分 **+1062.5 kgCO2eq**（ORDER_COMPLETE，与 README 基准一致）；4 电池碳足迹 80744.05 kgCO2eq×5 阶段
+
+**占位符清零（本轮）**：
+- 补齐 3 个缺失业务页：`carbon/factor`（排放因子库，新增 `GET /public/carbon/factors`）、`blockchain/config`（合约配置，新增 `GET /public/chain/config`）、`recycle/process`（回收处理，新增 `GET /recycler/trade-in/processed`）
+- 框架管理页 16 个经通用组件 `RuoYiListPage.vue` 接入真实 RuoYi API（user/role/menu/dept/post/dict/config/notice/oss/client/tenant/tenantPackage/online/operlog/logininfor/gen）
+- `monitor/cache` 自定义小页（/monitor/cache）；`monitor/admin`、`monitor/snailjob` 改为"未启用说明页"（本项目未部署 SBA/SnailJob Server，业务零影响）
+- `PlaceholderView` 文案改为诊断信息；商品页去掉"（D26）"字样；sys_menu 隐藏 RuoYi 演示残留"测试菜单"（5/1500/1506 → visible=1）
+
+**环境坑备忘（本轮实测）**：
+- `run-backend.cmd` 在 ruoyi-admin 子目录跑 `mvn spring-boot:run`，**模块代码改动必须先 `mvn install -pl nev-modules/<module> -am`**，否则跑的是本地仓库旧 jar（症状：新接口 404 "请求地址不存在"）
+- WeBASE-Front 容器重启后 Docker Desktop 端口代理可能卡死（`localhost:5002` 空响应）：`docker restart webase-front` 即恢复；front 的 h2 私钥库挂载在 `E:\Study\IdeaProjects\NEV\webase-deploy\webase-front\h2`，重启不丢钥
+- PowerShell 5.1 调 curl 传 JSON body 必须走临时文件（内嵌引号会被吞）；Redis `FLUSHALL` 会踢掉所有登录会话
+- 链是永久账本：清库重导后 trace 编号不能与历史链上编号重复（本轮改用 `NEV-DEMO-1109-*` 前缀）
+
 ## 8. 还没拍板、未来要决定的事
 
 1. **WeBASE 部署策略**：和老仓共用（沿用 5000-5004）还是独立部署一套？目前默认共用，新合约部署后地址写入 `nev_contract_config` 表区分。

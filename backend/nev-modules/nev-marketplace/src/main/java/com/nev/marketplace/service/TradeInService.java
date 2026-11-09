@@ -206,6 +206,16 @@ public class TradeInService {
         return requestMapper.selectList(q).stream().map(r -> toVo(r, null, null)).toList();
     }
 
+    /** recycler 处理历史：已评估（待消费者接受）+ 已完成回收 */
+    public List<TradeInVO> listProcessedForRecycler() {
+        LambdaQueryWrapper<NevTradeInRequestDO> q = new LambdaQueryWrapper<>();
+        q.in(NevTradeInRequestDO::getStatus, "EVALUATED", "COMPLETED")
+            .orderByDesc(NevTradeInRequestDO::getId);
+        return requestMapper.selectList(q).stream()
+            .map(r -> toVo(r, batteryMapper.selectById(r.getOldBatteryId()), null))
+            .toList();
+    }
+
     // -------- helpers --------
 
     private NevBatteryDO findBatteryByTrace(String traceNumber) {

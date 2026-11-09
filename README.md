@@ -367,6 +367,7 @@ pnpm dev --host 127.0.0.1
 | 新人维护者 | [HANDOFF.md](HANDOFF.md) → [docs/architecture/README.md](docs/architecture/README.md) | 跨对话上下文 + 模块分层 + 链上链下双写校验 + 5 角色 e2e 时序 |
 | 接口对接 | [docs/api/README.md](docs/api/README.md) | 9 大类端点索引 + dual-header 鉴权 + 公开扫码 schema + ID 序列化约定 |
 | 合约审查 | [docs/contracts/design.md](docs/contracts/design.md) | 3 层继承 + 6 EventType + keccak256 规约 + §9 Wave 2 D11 实际部署落地 |
+| 演示 / 答辩 | [docs/demo/演示指南.md](docs/demo/演示指南.md) | 演示账号 + 演示数据清单 + 12-15 分钟演示动线（2026-11-09 就绪版） |
 | 钱包地址查询 | [contracts/address/address.md](contracts/address/address.md) | 合约部署地址 + 7 角色钱包清单 |
 | 业务需求 | [docs/requirements/2026-05-14-...](docs/requirements/2026-05-14-requirement-analysis-greenfield-rebuild-new-repo-nev-v2-ruoyi-vu.md) | 冻结需求（vibe 治理产物） |
 | 工期 / 计划 | [docs/plans/2026-05-14-...](docs/plans/2026-05-14-execution-plan-xl-wave-nev-v2-ruoyi-vue-plus-mysql-sa-token-myba-execution-plan.md) | 4 Wave / 30 天 XL 执行计划（FROZEN） |

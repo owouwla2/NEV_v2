@@ -29,6 +29,11 @@ public class RecyclerTradeInController {
         return R.ok(tradeInService.listPendingForRecycler());
     }
 
+    @GetMapping("/processed")
+    public R<List<TradeInVO>> processed() {
+        return R.ok(tradeInService.listProcessedForRecycler());
+    }
+
     @GetMapping("/detail/{id}")
     public R<TradeInVO> detail(@PathVariable Long id) {
         return R.ok(tradeInService.detail(id));
